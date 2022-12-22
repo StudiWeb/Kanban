@@ -16,7 +16,6 @@ export default {
     mounted() {
         //to show tooltip
         $('[data-toggle="tooltip"]').tooltip();
-        console.log(this.members)
     },
 
     computed: {

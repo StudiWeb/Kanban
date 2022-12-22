@@ -27,8 +27,9 @@
         </div>
         <button @click="openModal" class="btn btn-success">Create task</button>
     </div>
+
     <teleport to="body">
-        <base-modal>
+        <base-modal id="createTaskModal">
             <template #header>Create task</template>
             <template #body>
                 <div class="row">
@@ -54,17 +55,35 @@
                     <p>Are you sure you want to add this task?</p>
                     <div>
                         <button @click="createTask" class="btn btn-success mr-2">Yes</button>
-                        <button @click="closeModal" class="btn btn-primary">No</button>
+                        <button @click="closeCreateTaskModal" class="btn btn-primary">No</button>
                     </div>
                 </div>
             </template>
         </base-modal> 
     </teleport>
+
+    <teleport>
+        <base-modal id="validationModal">
+            <template #header>Validation info</template>
+            <template #body>{{validationMesseage}}</template>
+            <template #footer>
+                <div class="d-flex justify-content-end">
+                    <button @click="closeValidationModal" class="btn btn-primary">Ok</button>
+                </div>
+            </template>
+        </base-modal>
+    </teleport>
+
     <teleport to="body">
-        <base-toast>
+        <base-modal id="serverResponseModal">
             <template #header>Server response</template>
-            <template #body>You have just added a new task.</template>
-        </base-toast>
+            <template #body>You have just added a new task successfully!.</template>
+            <template #footer>
+                <div class="d-flex justify-content-end">
+                    <button @click="closeServerResponseModal" class="btn btn-primary">Ok</button>
+                </div>
+            </template>
+        </base-modal>
     </teleport>
 
 </template>
@@ -103,6 +122,7 @@ export default {
             selectedProjectStartDate: null,
             selectedProjectEndDate: null,
             teamMembers: [],
+            validationMesseage: ''
         }
     },
 
@@ -271,13 +291,24 @@ export default {
             }
 
             if(validation) {
-                $('#modal').modal('show');
+                $('#createTaskModal').modal('show');
+            } else {
+                this.validationMesseage = 'Please fill the form.';
+                $('#validationModal').modal('show');
             }
 
         },
 
-        closeModal() {
-            $('#modal').modal('hide');
+        closeValidationModal() {
+            $('#validationModal').modal('hide');
+        },
+
+        closeServerResponseModal() {
+            $('#serverResponseModal').modal('hide');
+        },
+
+        closeCreateTaskModal() {
+            $('#createTaskModal').modal('hide');
         },
 
         selectEmployees() {
@@ -300,6 +331,7 @@ export default {
         },
 
         createTask() {
+
             push(ref(database, 'projects/' + this.selectedProjectId + '/tasks'), {
                     name: this.taskName,
                     description: this.taskDescription,
@@ -315,8 +347,9 @@ export default {
             this.endDate = '';
             this.selectedEmployeeIds = [];
 
-            $('#modal').modal('hide');
-            $('#toast').toast('show');
+            $('#createTaskModal').modal('hide');
+            $('#serverResponseModal').modal('show');
+
         }
 
     }
