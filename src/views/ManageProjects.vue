@@ -7,7 +7,7 @@
             <base-button @click="setPage('delete-project')" class="m-2 btn-danger">DELETE PROJECT</base-button>
         </div>
     </div>
-    <component :is="page" :key="componentKey"></component>
+    <component :is="page" :key="componentKey" @change-key="changeKey"></component>
 </template>
 
 <script>

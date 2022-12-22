@@ -5,8 +5,8 @@
         </div>
         <div class="px-0 col-xl-6 form-group">
             <label>Select project</label>
-            <select v-model="selectedProjectId" @change="forceRender" class="form-control">
-                <option value="empty"></option>
+            <select v-model="selectedProjectId" class="form-control">
+                <option value="empty" selected>none</option>
                 <option v-for="p in projects" :key="p.id" :value="p.id">{{p.name}}</option>
             </select>
         </div>
@@ -33,7 +33,8 @@
             </div>
             <div>
                 <component 
-                    :selectedProjectId="selectedProjectId" 
+                    :selectedProjectId="selectedProjectId"
+                    @change-key="changeKey" 
                     :is="componentName" 
                     :key="componentKey">
                 </component>
@@ -112,7 +113,7 @@ export default {
             $(selector).addClass('active');
         },
 
-        forceRender() {
+        changeKey() {
             this.componentKey += 1;
         }
     }
