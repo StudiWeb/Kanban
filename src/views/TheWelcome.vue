@@ -1,0 +1,3 @@
+<template>
+    Kanban app
+</template>
