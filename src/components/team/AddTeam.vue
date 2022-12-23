@@ -115,23 +115,6 @@ export default {
     },
 
     computed: {
-        isDataFilledProperly() {
-            if(this.teamName === '') {
-                return false;
-            } else {
-                if(this.teamMembers !== null) {
-                    const teamLeader = this.teamMembers.find((m) => m.isSelectedAsTeamLeader === true);
-                    if(teamLeader) {
-                        return true;
-                    } else {
-                        return false;
-                    }
-                } else {
-                    return false;
-                }
-            } 
-        },
-
         getTeamMembers() {
             if(this.teamMembers !== null) {
                 return this.teamMembers;
@@ -159,7 +142,7 @@ export default {
             }
         });
 
-        //gets all team names that are in use
+        //gets all team names that are already in use
         fetch('https://vue-kanban-5ad84-default-rtdb.europe-west1.firebasedatabase.app/teams.json')
         .then((response) => {
             if(response.ok) {
@@ -168,10 +151,10 @@ export default {
         }).
         then((data) => {
             for(const id in data) {
+                
                 this.teamNames.push(data[id].name);
             }
         });
-
     },
 
     methods: {

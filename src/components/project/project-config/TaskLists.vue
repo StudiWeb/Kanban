@@ -16,7 +16,7 @@
                 <tr v-for="task in tasks">
                     <td>{{task.name}}</td>
                     <td>{{task.description}}</td>
-                    <td class="col-4">
+                    <td>
                         <div class="my-1" v-for="e in task.employees" :key="e.id">{{e.name}} - <span class="font-italic">{{e.job}}</span></div>
                     </td>
                     <td>{{task.startDate}}</td>

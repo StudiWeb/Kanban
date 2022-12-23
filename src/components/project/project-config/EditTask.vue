@@ -1,4 +1,5 @@
 <template>
+
     <div class="col-xl-6 px-0">
         <div class="h5 my-3">Edit task</div>
         <div class="form-group">
@@ -8,10 +9,12 @@
                 <option v-for="task in tasks" :key="task.id" :value="task.id">{{task.name}}</option>
             </select>
         </div>
+
         <div v-if="canShowEditTaskPanel">
             <div class="form-group">
                 <label>Task name</label>
                 <input v-model="taskName" ref="taskName" id="taskName" type="text" class="form-control">
+                <div class="invalid-feedback">This task name is already in use in this project. Please type different task name.</div>
             </div>
             <div class="form-group">
                 <label>Task description</label>
@@ -19,16 +22,19 @@
             </div>
             <div class="form-group">
                 <label>Start task date</label>
-                <input v-model="startDate" class="form-control" type="date" :min="taskStartDate" :max="endDate">
+                <input v-model="startDate" id="startDate" class="form-control" type="date" :max="endDate">
             </div>
             <div class="form-group">
                 <label>End task date</label>
-                <input v-model="endDate" class="form-control" type="date" :min="startDate" :max="taskEndDate">
+                <input v-model="endDate" id="endDate" class="form-control" type="date" :min="startDate">
             </div>
             <div class="form-group">
                 <label>Choose employee</label>
-                <select v-model="selectedEmployeeIds" @change="selectEmployees" multiple id="selectedEmployeeIds" class="form-control">
-                    <option v-for="m in projectMembers" :key="m.id" :value="m.id">{{m.name}} - {{m.job}}</option>
+                <select v-model="selectedEmployeeIds" multiple id="selectedEmployeeIds" class="form-control">
+                    <option v-for="m in projectMembers" :key="m.id" :value="m.id">
+                        {{m.name}} - {{m.job}} 
+                        <span v-if="m.isSelectedAsProjectManager">(PM)</span> <span v-if="m.isSelectedAsTeamLeader">(TL)</span>
+                    </option>
                 </select>
                 <small class="form-text text-muted">You can select more than one employee</small>
             </div>
@@ -37,13 +43,13 @@
     </div>
 
     <teleport to="body">
-        <base-modal>
+        <base-modal id="editTaskModal">
             <template #header>Edit task</template>
             <template #body>
                 <div class="row">
                     <div class="col-4 d-flex flex-column"><span class="font-weight-bold">Task name</span>{{taskName}}</div>
                     <div class="col-8 d-flex flex-column">
-                        <span class="font-weight-bold">{{(selectedEmployeeIds.length === 1 ) ? 'Employee' : 'Employees'}} </span>
+                        <span class="font-weight-bold">{{(selectedEmployeeIdsLength === 1 ) ? 'Employee' : 'Employees'}} </span>
                         <p class="mb-1" v-for="e in selectedEmployees" :key="e.id">{{e.name}} - {{e.job}}</p>
                     </div>
                 </div>
@@ -63,7 +69,7 @@
                     <p>Are you sure you want to edit this task?</p>
                     <div>
                         <button @click="editTask" class="btn btn-success mr-2">Yes</button>
-                        <button @click="closeModal('#modal')" class="btn btn-primary">No</button>
+                        <button @click="closeEditTaskModal" class="btn btn-primary">No</button>
                     </div>
                 </div>
             </template>
@@ -71,22 +77,27 @@
     </teleport>
 
     <teleport to="body">
-        <base-modal id="incorrectEditData">
+        <base-modal id="validationModal">
             <template #header>Edit data</template>
-            <template #body>You must provide any change in selected task.</template>
+            <template #body>You must enter any change in the task to edit it.</template>
             <template #footer>
                 <div class="d-flex justify-content-end">
-                    <button @click="closeModal('#incorrectEditData')" class="btn btn-primary">Ok</button>
+                    <button @click="closeValidationModal" class="btn btn-primary">Ok</button>
                 </div>  
             </template>
         </base-modal>
     </teleport>
 
     <teleport to="body">
-        <base-toast>
+        <base-modal id="serverResponseModal">
             <template #header>Server response</template>
-            <template #body>You have just edited the task.</template>
-        </base-toast>
+            <template #body>You have just edited the task successfully!.</template>
+            <template #footer>
+                <div>
+                    <button @click="closeServerResponseModal" class="btn btn-primary">Ok</button> 
+                </div>
+            </template>
+        </base-modal>
     </teleport>
 
 </template>
@@ -94,7 +105,7 @@
 <script>
 
 import { initializeApp } from "firebase/app";
-import { getDatabase, set, ref } from "firebase/database";
+import { getDatabase, update, get,child, ref } from "firebase/database";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBiWEX-ygigO9Kj04kWtjASKLJ3RX20uuM",
@@ -111,108 +122,169 @@ const database = getDatabase(firebase);
 
 export default {
 
+    emits: ['change-key'],
+
     props: ['selectedProjectId'],
 
     data() {
         return {
-            tasks: [],
             selectedTaskId: 'empty',
             taskName: '',
             taskDescription: '',
             startDate: '',
             endDate: '',
+            projects: [],
             projectMembers: [],
+            tasks: [],
+            taskNames: [],
+
             selectedEmployeeIds: [],
             selectedEmployees: [],
-            taskMembers: [],
             canShowEditTaskPanel: false,
             selectedProject: null,
-            taskStartDate: '',
-            taskEndDate: '',
         }
     },
 
     watch: {
-        selectedTaskId(newId) {
-            if(newId !== 'empty') {
-                const task = this.tasks.find((t) => t.id === newId);
+
+        selectedProjectId(projectId) {
+            this.selectedProject = this.projects.find((p) => p.id === projectId);
+                this.projectMembers = this.projects.find((p) => p.id === projectId).team.members;
+                this.tasks = this.projects.find((p) => p.id === projectId).tasks;
+        },
+
+        selectedTaskId(taskId) {
+
+            if(taskId !== 'empty') {
+                //resets employees who are asigned to task
+                this.selectedEmployeeIds = [];
+                const task = this.tasks.find((t) => t.id === taskId);
+                //inits form fields with selected task properties
                 this.taskName = task.name;
                 this.taskDescription = task.description;
                 this.startDate = task.startDate;
                 this.endDate = task.endDate;
-                this.taskMembers = task.employees;
+                //inits employees who are asigned to task
                 task.employees.forEach((t) => this.selectedEmployeeIds.push(t.id));
-                this.projectMembers.forEach((member) => {
-                    this.selectedEmployeeIds.forEach((id) => {
-                        if(id === member.id) {
-                            this.selectedEmployees.push(member);
-                        }
-                    });
-                });
                 this.canShowEditTaskPanel = true;
-                
             } else {
                 this.canShowEditTaskPanel = false;
+            }
+        },
+
+        selectedEmployeeIds(employeIds) {
+            this.selectedEmployees = [];
+            //sets selectedEmployees
+            employeIds.forEach((id) => {
+                this.selectedEmployees.push(
+                    this.projectMembers.find((member) => member.id === id)
+                )
+            })
+        },
+
+        taskName(name) {
+
+            //gets all task names
+            get(child(ref(database), 'projects/' + this.selectedProjectId + '/tasks'))
+            .then((data) => {
+                if (data.exists()) {
+                    this.taskNames = [];
+                    for(const id in data.val()) {
+                        if(id !== this.selectedTaskId) {
+                            this.taskNames.push(data.val()[id].name);
+                        }
+                    }
+                } else {
+                    console.log("No data available");
+                }
+
+                if(this.taskNames.find((taskName) => taskName === name)) {
+                    $('#taskName').addClass('is-invalid');
+                } else {
+                    $('#taskName').removeClass('is-invalid');
+                }
+
+            }).catch((error) => {
+                console.error(error);
+            });
+        }
+    },
+
+    computed:{
+        selectedEmployeeIdsLength() {
+            if(this.selectedEmployeeIds) {
+                return this.selectedEmployeeIds.length;
             }
         }
     },
 
     mounted() {
-        fetch('https://vue-kanban-5ad84-default-rtdb.europe-west1.firebasedatabase.app/projects.json')
-        .then((response) => {
-            if(response.ok) {
-                return response.json();
-            }
-        })
-        .then((data) => {
-            
-            for (const id in data) {
-                if(this.selectedProjectId !== 'empty' && this.selectedProjectId === id) {
-                    
-                    if(id === this.selectedProjectId) {
-                        this.selectedProject = data[id];
-                        this.taskStartDate = this.selectedProject.startDate;
-                        this.taskEndDate = this.selectedProject.endDate;
-                    }
 
-                    for(const membersId in  data[id].team.members) {
-                        this.projectMembers.push(data[id].team.members[membersId]);
-                    } 
-                    
-                    for(const t in data[id].tasks) {
-                        this.tasks.push({
-                            id: t,
-                            name : data[id].tasks[t].name,
-                            description: data[id].tasks[t].description,
-                            startDate: data[id].tasks[t].startDate,
-                            endDate: data[id].tasks[t].endDate,
-                            employees: data[id].tasks[t].employees,
-                            status:  data[id].tasks[t].status
-                        });
-                    } 
+        //gets all projets
+        get(child(ref(database), `projects`))
+        .then((data) => {
+            if (data.exists()) {
+                for(const id in data.val()) {
+                    this.projects.push({
+                        id: id,
+                        name: data.val()[id].name,
+                        startDate: data.val()[id].startDate,
+                        endDate: data.val()[id].endDate,
+                        projectManager: data.val()[id].projectManager,
+                        team: data.val()[id].team,
+                        tasks: data.val()[id].tasks,
+                        isProjectVisible: false
+                    });
                 }
+
+                this.selectedProject = this.projects.find((p) => p.id === this.selectedProjectId);
+                this.projectMembers = this.projects.find((p) => p.id === this.selectedProjectId).team.members;
+                //gets all tasks from selected project
+                const tasks = Array.of(this.projects.find((p) => p.id === this.selectedProjectId).tasks);
+                tasks.forEach((task) =>  {
+                    for (const id in task) {
+                        this.tasks.push({
+                            id: id,
+                            name : task[id].name,
+                            description: task[id].description,
+                            startDate: task[id].startDate,
+                            endDate: task[id].endDate,
+                            employees: task[id].employees,
+                            status: task[id].status
+                        }); 
+                    }
+                });
+            } else {
+                console.log("No data available");
             }
-        }); 
-        
+        }).catch((error) => {
+            console.error(error);
+        });        
     },
 
     methods: {
 
         openModal() {
             const task = this.tasks.find((t) => t.id === this.selectedTaskId);
-
             const name = task.name;
             const description = task.description;
             const startDate = task.startDate;
             const endDate = task.endDate;
-            let employees = [];
-            task.employees.forEach((e) => employees.push(e));
+            //takes employees ids from employees who are asigned to task from the begining
+            let employeesIds = [];
+            task.employees.forEach((e) => {
+                employeesIds.push(e.id);
+            })
 
             let validation = false;
 
-            if(name !== this.taskName) {
-                validation = true;
-            }
+            if (
+                (!this.taskNames.find((taskName) => taskName === this.taskName)) 
+                && this.taskName !== name 
+                && this.taskName !== '') 
+            {
+                validation = true; 
+            } 
 
             if(description !== this.taskDescription) {
                 validation = true;
@@ -226,37 +298,35 @@ export default {
                 validation = true;
             }
 
-            if(employees.length !== this.selectedEmployees.length) {
+            //if there is difference then array length is not equal zero
+            let difference = this.selectedEmployeeIds.filter(x => !employeesIds.includes(x));
+            if(difference.length) {
                 validation = true;
-            } else {
-                this.selectedEmployees.forEach((se) => {
-                    if(!employees.find((e) => e.id === se.id)) {
-                        validation = true;
-                    }
-                });
             }
-
+ 
             if(validation) {
-                $('#modal').modal('show');
+                $('#editTaskModal').modal('show');
             } else {
-                $('#incorrectEditData').modal('show');
+                $('#validationModal').modal('show');
             }
             
         },
 
-        closeModal(modal) {
-            $(modal).modal('hide');
+        closeValidationModal() {
+            $('#validationModal').modal('hide');
         },
 
-        selectEmployees() {
-            this.selectedEmployees = [];
-            this.selectedEmployeeIds.forEach((id) => {
-                this.selectedEmployees.push(this.projectMembers.find((member) => member.id === id));
-            });
+        closeServerResponseModal() {
+            $('#serverResponseModal').modal('hide');
+            this.$emit('change-key');
+        },
+
+        closeEditTaskModal() {
+            $('#editTaskModal').modal('hide');
         },
 
         editTask() {
-            set(ref(database, 'projects/' + this.selectedProjectId + '/tasks/' + this.selectedTaskId), {
+            update(ref(database, 'projects/' + this.selectedProjectId + '/tasks/' + this.selectedTaskId), {
                 name: this.taskName,
                 description: this.taskDescription,
                 startDate: this.startDate,
@@ -264,9 +334,8 @@ export default {
                 employees: this.selectedEmployees,
                 status: 'todo'
             });
-
-            $('#modal').modal('hide');
-            $('#toast').toast('show');
+            $('#editTaskModal').modal('hide');
+            $('#serverResponseModal').modal('show');
         }
 
     }

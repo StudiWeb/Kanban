@@ -7,6 +7,7 @@
             <div class="form-group">
                 <label>Project name</label>
                 <input v-model="projectName" ref="projectName" type="text" class="form-control" id="projectName">
+                <div class="invalid-feedback">This project name is already in use. Please type different project name.</div>
             </div>
             <div class="form-group">
                 <label>Start date</label>
@@ -170,7 +171,7 @@
 <script>
 
 import { initializeApp } from "firebase/app";
-import { getDatabase, update, ref } from "firebase/database";
+import { getDatabase,get,child, update, ref } from "firebase/database";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBiWEX-ygigO9Kj04kWtjASKLJ3RX20uuM",
@@ -206,16 +207,22 @@ export default {
             teams: [],
             employees: [],
             team: [],
-            isDataFilledPropely: false
+            isDataFilledPropely: false,
+            projectNames: []
         }
     },
 
     watch: {
 
-        projectName(value) {
-            if(value !== '') {
-                $('#projectName').removeClass('is-invalid');
-                $('#projectName').addClass('is-valid');
+        projectName(name) {
+            if(name !== '') {
+                if(this.projectNames.find((n) => n === name)) {
+                    $('#projectName').removeClass('is-valid');
+                    $('#projectName').addClass('is-invalid');
+                } else {
+                    $('#projectName').removeClass('is-invalid');
+                    $('#projectName').addClass('is-valid');
+                }
             } else {
                 $('#projectName').removeClass('is-valid');
             }
@@ -401,6 +408,20 @@ export default {
                 });
             }
         });
+
+        //gets all task names
+        get(child(ref(database), 'projects'))
+            .then((data) => {
+                if (data.exists()) {
+                    for(const id in data.val()) {
+                        this.projectNames.push(data.val()[id].name);    
+                    }
+                } else {
+                    console.log("No data available");
+                }
+            }).catch((error) => {
+                console.error(error);
+            });
     },
 
     methods: {
@@ -409,9 +430,13 @@ export default {
 
             let validation = true;
 
-            if(this.projectName === '') {
+            if(this.projectName !== '') {
+                if(this.projectNames.find((n) => n === this.projectName)) {
+                    validation = false;
+                    $('#projectName').addClass('is-invalid');
+                }
+            } else {
                 $('#projectName').addClass('is-invalid');
-                validation = false;
             }
 
             if(this.selectedProjectManagerId === 'empty') {
@@ -451,14 +476,10 @@ export default {
 
         createProject() {
 
-
             this.selectedTeam = {
                 name: this.selectedTeamName,
                 members: this.teamMembers
             };
-
-            console.log(this.teamMembers)
-            console.log(this.selectedTeam)
 
             update(ref(database,'employees/' + this.selectedProjectManagerId),{
                 isSelectedAsProjectManager: true

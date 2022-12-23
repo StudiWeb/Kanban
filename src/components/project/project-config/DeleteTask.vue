@@ -44,7 +44,7 @@
     </div>
 
     <teleport to="body">
-        <base-modal>
+        <base-modal id="deleteTaskModal">
             <template #header>Delete task</template>
             <template #body>
                 <div>
@@ -93,10 +93,15 @@
     </teleport>
 
     <teleport to="body">
-        <base-toast>
+        <base-modal id="serverResponseModal">
             <template #header>Server response</template>
-            <template #body>You have just deleted a task.</template>
-        </base-toast>
+            <template #body>You have just deleted a task successfully!.</template>
+            <template #footer>
+                <div class="d-flex justify-content-end">
+                    <button @click="closeServerResponseModal" class="btn btn-primary">Ok</button>
+                </div>
+            </template>
+        </base-modal>
     </teleport>
 
 </template>
@@ -120,6 +125,8 @@ const firebase = initializeApp(firebaseConfig);
 const database = getDatabase(firebase);
 
 export default {
+
+    emits: ['change-key'],
 
     props: ['selectedProjectId'],
 
@@ -221,19 +228,24 @@ export default {
 
     methods: {
         openModal() {
-            $('#modal').modal('show');
+            $('#deleteTaskModal').modal('show');
         },
 
-        closeModal() {
-            $('#modal').modal('hide');
+        closeDeleteTaskModal() {
+            $('#deleteTaskModal').modal('hide');
+        },
+
+        closeServerResponseModal() {
+            $('#serverResponseModal').modal('hide');
+            this.$emit('change-key');
         },
 
         deleteTask() {
             set(ref(database, 'projects/' + this.selectedProjectId + '/tasks/' + this.selectedTaskId),null);
             this.selectedProject = null;
             this.selectedTaskId = 'empty';
-            $('#modal').modal('hide');
-            $('#toast').toast('show');
+            $('#deleteTaskModal').modal('hide');
+            $('#serverResponseModal').modal('show');
         }
     }
 }
