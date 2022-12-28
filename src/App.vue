@@ -70,6 +70,34 @@ body {
   box-shadow: 0 0 0 3px rgba(255, 255, 255, .25);
 }
 
+
+/*
+*styles for tooltips
+*/
+
+[rel="tolltip"] {
+  content: attr(title);
+  z-index: 9999;
+}
+
+.tooltip-inner {
+    max-width: 340px;
+    background-color: #007bff !important;
+}
+
+.tooltip.bs-tooltip-right .arrow:before {
+    border-right-color: #007bff !important;
+}
+.tooltip.bs-tooltip-left .arrow:before {
+    border-left-color: #007bff !important;
+}
+.tooltip.bs-tooltip-bottom .arrow:before {
+    border-bottom-color: #007bff !important;
+}
+.tooltip.bs-tooltip-top .arrow:before {
+    border-top-color: #007bff !important;
+}
+
 /*
  * styles for tabs in components
  */

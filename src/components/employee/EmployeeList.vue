@@ -3,7 +3,14 @@
         <div class="col-xl-6 px-0">
             <div class="h5 my-4">List of employees</div>
         </div>
-        <table class="col-xl-6 table table-striped">
+        <div v-if="numberOfEmployees === 0" class="d-flex align-items-center alert alert-info col-xl-6" role="alert">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-exclamation-octagon" viewBox="0 0 16 16">
+                <path d="M4.54.146A.5.5 0 0 1 4.893 0h6.214a.5.5 0 0 1 .353.146l4.394 4.394a.5.5 0 0 1 .146.353v6.214a.5.5 0 0 1-.146.353l-4.394 4.394a.5.5 0 0 1-.353.146H4.893a.5.5 0 0 1-.353-.146L.146 11.46A.5.5 0 0 1 0 11.107V4.893a.5.5 0 0 1 .146-.353L4.54.146zM5.1 1 1 5.1v5.8L5.1 15h5.8l4.1-4.1V5.1L10.9 1H5.1z"/>
+                <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995z"/>
+            </svg>
+            <div class="ml-2">There are no any employees.</div>
+        </div>
+        <table v-else class="col-xl-6 table table-striped">
             <thead>
                 <tr>
                     <th scope="col">#</th>
@@ -47,6 +54,7 @@ export default {
     data() {
         return {
             employees: [],
+            numberOfEmployees: 0
         }
     },
 
@@ -60,16 +68,15 @@ export default {
             }
         })
         .then((data) => {
-            const results = [];
             for (const id in data) {
-                results.push({ 
+                this.employees.push({ 
                     name: data[id].name,
                     job: data[id].job,
                     isProjectManager: data[id].isProjectManager,
                     isTeamLeader: data[id].isTeamLeader,
                 });
             }
-            this.employees = results;
+            this.numberOfEmployees = this.employees.length;
         })
     } 
 }

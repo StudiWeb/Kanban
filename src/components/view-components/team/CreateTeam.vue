@@ -539,6 +539,7 @@ export default {
                     this.teamMembers = newTeamMembersArray;
 
                     const teamLeader = this.employees.find((e) => e.id === selectedTeamLeaderId);
+                    this.selectedTeamLeader = teamLeader;
                     teamLeader.isSelected = true;
                     teamLeader.isTeamMember = true;
                     teamLeader.isSelectedAsTeamLeader = true;
@@ -549,6 +550,7 @@ export default {
                     this.employees = newEmployeesArray;
 
                     const teamLeader = this.teamMembers.find((tm) => tm.id === selectedTeamLeaderId);teamLeader.isTeamMember = true;
+                    this.selectedTeamLeader = teamLeader;
                     teamLeader.isSelected = true;
                     teamLeader.isTeamMember = true;
                     teamLeader.isSelectedAsTeamLeader = true;
