@@ -22,8 +22,20 @@ export default {
 </script>
 
 <style scoped>
-.selected {
-    pointer-events: none;
-    background-color: #6c757d;
+
+tr:hover {
+    cursor: pointer;
 }
+
+.selected {
+    color: #fff;
+    background-color: #73c586;
+}
+
+.selectedAsTeamLeader {
+    pointer-events: none;
+    color: #fff;
+    background-color: #28a745;
+}
+
 </style>

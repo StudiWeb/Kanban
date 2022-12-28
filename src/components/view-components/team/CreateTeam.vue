@@ -35,6 +35,8 @@
     <div class="col-xl-6">
         <div class="h5 my-4">Add employees to your team</div>
         <div class="d-flex flex-column flex-lg-row align-items-md-start">
+
+            <!-- employees to choose -->
             <the-employees title="Employees">
                 <template #default>
                     <team-member
@@ -43,23 +45,31 @@
                         :id="e.id"
                         :name="e.name"
                         :job="e.job"
-                        :class="{selected : e.isSelected}">
+                        :class="{selected : e.isSelected,'selectedAsTeamLeader': e.isSelectedAsTeamLeader}">
                     </team-member>
                 </template>
             </the-employees>
 
-            <team-buttons
-                :employeeId="getEmployeeId"
-                :teamMemberId="getTeamMemberId"
-                @move-employee="moveEmployeeToTeam"
-                @move-teamMember="moveTeamMemberToEmployees">
-            </team-buttons>
+            <!-- move buttons -->
+            <div class="d-flex flex-column align-self-center align-items-center m-3">
+                <button @click="moveEmployeeToTeam" id="moveToTeam" ref="moveEmployeeToTeamButton" type="button" class="btn btn-success my-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-right" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z"/>
+                    </svg>
+                </button>
+                <button @click="moveTeamMemberToEmployees" id="moveToEmployees" ref="moveTeamMemberToEmployeesButton" type="button" class="btn btn-danger my-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-left" viewBox="0 4 16 16">
+                        <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
+                    </svg>
+                </button>
+            </div>
 
-            <the-employees :title="getTeamName">
+            <!-- team members -->
+            <the-employees :title="teamName">
                 <template #managers>
                     <div class="my-2">
                         <div>
-                            <span>Team leader: </span><span>{{getTeamLeaderName}}</span>
+                            <span>Team leader: </span><span>{{teamLeaderName}}</span>
                         </div>
                     </div>
                 </template>
@@ -71,7 +81,7 @@
                         :id="m.id"
                         :name="m.name"
                         :job="m.job"
-                        :class="{selected : m.isSelected}">
+                        :class="{selected : m.isSelected,'selectedAsTeamLeader': m.isSelectedAsTeamLeader}">
                     </team-member>
                 </template>
             </the-employees>
@@ -102,13 +112,11 @@ const database = getDatabase(firebase);
 
 import TheEmployees from './TheEmployees.vue';
 import TeamMember from './TeamMember.vue';
-import TeamButtons from './TeamButtons.vue';
 
 export default {
     components: {
         TheEmployees,
         TeamMember,
-        TeamButtons
     },
 
     props: [
@@ -232,7 +240,7 @@ export default {
                         }
                     }
 
-                    if(this.selectedTeam) {             
+                    if(this.selectedTeam) {
                         this.enteredTeamName = this.selectedTeam.name;
                         this.selectedTeamLeaderId = this.selectedTeam.members.find((m) => m.isSelectedAsTeamLeader === true).id;
                         this.selectedTeamLeader = this.selectedTeam.members.find((m) => m.isSelectedAsTeamLeader === true);
@@ -279,7 +287,7 @@ export default {
     },
 
     computed: {
-        getTeamName() {
+        teamName() {
             if(this.enteredTeamName === '') {
                 return 'Your team name';
             } else {
@@ -287,38 +295,25 @@ export default {
             }
         },
 
-        getTeamLeaderName() {
+        teamLeaderName() {
             if(this.selectedTeamLeader) {
                 return this.selectedTeamLeader.name;
             } else {
                 return 'none';
             }
         },
-
-        getEmployeeId() {
-            if(this.selectedEmployee) {
-                return this.selectedEmployee.id;
-            } else {
-                'none';
-            }
-        },
-
-        getTeamMemberId() {
-            if(this.selectedTeamMember) {
-                return this.selectedTeamMember.id;
-            } else {
-                return 'none';
-            }
-        }
     },
 
     mounted() {
-
-        //inits disabled properties for team name input and team leader select in EditTeam component
+        //disables team name input and team leader select for 'Edit team'
         if(this.componentName === 'EditTeam') {
             this.$refs.teamNameInput.disabled = true;
             this.$refs.teamLeaderSelect.disabled = true;
         }
+
+        //disables buttons that moves employees
+        this.$refs.moveEmployeeToTeamButton.disabled = true;
+        this.$refs.moveTeamMemberToEmployeesButton.disabled = true;
 
         //gets employees and team leaders
         fetch('https://vue-kanban-5ad84-default-rtdb.europe-west1.firebasedatabase.app/employees.json')
@@ -423,79 +418,111 @@ export default {
         },
 
         selectEmployee(id) {
-            this.teamMembers.forEach((tm) => {
-                if(tm.isSelected === true && tm.isSelectedAsTeamLeader === false) {
-                    tm.isSelected = false;
-                }
-            });
 
-            if(this.moveEmployeeToTeamButton !== null) {
-                this.moveEmployeeToTeamButton.disabled = false
-                this.moveTeamMemberToEmployeesButton.disabled = true;
-            }
+            const selectedEmployee = this.employees.find((e) => e.isSelected === true && e.isSelectedAsTeamLeader === false);
 
-            //removes selected class from previous choosen employee
-            while(this.employees.find((m) => m.isSelected === true &&  m.isSelectedAsTeamLeader === false)) {
-                const index = this.employees.findIndex((m) => m.isSelected === true && m.isSelectedAsTeamLeader === false);
-                this.employees[index].isSelected = false;
-            }
-            //adds selected class to choosen employee
-            this.selectedEmployee = this.employees.find((e) => e.id === id);
-            this.selectedEmployee.isSelected = true;
-        },
-
-        selectTeamMember(id) {
             this.employees.forEach((e) => {
                 if(e.isSelected === true && e.isSelectedAsTeamLeader === false) {
                     e.isSelected = false;
                 }
-            });
+            })
 
-            if(this.moveTeamMemberToEmployeesButton !== null) {
-                this.moveEmployeeToTeamButton.disabled = true;
-                this.moveTeamMemberToEmployeesButton.disabled = false;
-            }
+            this.$refs.moveEmployeeToTeamButton.disabled = false;
+            this.$refs.moveTeamMemberToEmployeesButton.disabled = true;
 
-            //removes selected class from previous choosen team member
-            while(this.teamMembers.find((m) => m.isSelected === true && m.isSelectedAsTeamLeader === false)) {
+            //removes selected class from previous choosen employee
+            while(this.teamMembers.find((m) => m.isSelected === true &&  m.isSelectedAsTeamLeader === false)) {
                 const index = this.teamMembers.findIndex((m) => m.isSelected === true && m.isSelectedAsTeamLeader === false);
                 this.teamMembers[index].isSelected = false;
             }
+
+            this.selectedEmployee = this.employees.find((e) => e.id === id);
+            this.selectedEmployee.isSelected = true;
+
+            //toggles selected employee class
+            if(selectedEmployee) {
+                if(this.selectedEmployee !== null && this.selectedEmployee.id === selectedEmployee.id) {
+                    this.selectedEmployee.isSelected = !this.selectedEmployee.isSelected;
+                    this.$refs.moveEmployeeToTeamButton.disabled = true;
+                }
+            }
+
+        },
+
+        selectTeamMember(id) {
+
+            const selectedTeamMember = this.teamMembers.find((e) => e.isSelected === true && e.isSelectedAsTeamLeader === false);
+
+            this.teamMembers.forEach((m) => {
+                if(m.isSelected === true && m.isSelectedAsTeamLeader === false) {
+                    m.isSelected = false;
+                }
+            })
+
+            this.$refs.moveEmployeeToTeamButton.disabled = true;
+            this.$refs.moveTeamMemberToEmployeesButton.disabled = false;
+
+            //removes selected class from previous choosen team member
+            while(this.employees.find((m) => m.isSelected === true && m.isSelectedAsTeamLeader === false)) {
+                const index = this.employees.findIndex((m) => m.isSelected === true && m.isSelectedAsTeamLeader === false);
+                this.employees[index].isSelected = false;
+            }
+
             //adds selected class to choosen team member
             this.selectedTeamMember = this.teamMembers.find((m) => m.id === id);
             this.selectedTeamMember.isSelected = true;
+
+            
+            //toggles selected employee class
+            if(selectedTeamMember) {
+                if(this.selectedTeamMember !== null && this.selectedTeamMember.id === selectedTeamMember.id) {
+                    this.selectedTeamMember.isSelected = !this.selectedTeamMember.isSelected;
+                    this.$refs.moveTeamMemberToEmployeesButton.disabled = true;
+                }
+            }
         },
 
         //moves employee to team
-        moveEmployeeToTeam(id,moveEmployeeToTeamButton,moveTeamMemberToEmployeesButton) {
-            const employee = this.employees.find((e) => e.id === id);
-            const index = this.employees.findIndex((e) => e.id === id);
+        moveEmployeeToTeam() {
+            this.teamMembers.push(this.selectedEmployee);
+            const index = this.employees.findIndex((e) => e.id === this.selectedEmployee.id);
             this.employees.splice(index,1);
-            employee.isSelected = false;
-            employee.isTeamMember = true;
-            this.teamMembers.push(employee);
-            this.moveEmployeeToTeamButton = moveEmployeeToTeamButton;
-            this.moveTeamMemberToEmployeesButton = moveTeamMemberToEmployeesButton;
+            this.selectedEmployee = null;
 
+            this.teamMembers.forEach((m) => {
+                if(m.isSelected === true && m.isSelectedAsTeamLeader === false) {
+                    m.isSelected = false;
+                }
+            })
+            
             //sorts by team leader in team members
             this.teamMembers.sort(function(x,y) {
                 return (x === y) ? 0 : x.isSelectedAsTeamLeader ? -1 : 1;
             });
+
+            this.$refs.moveEmployeeToTeamButton.disabled = true;
+            
         },
 
         //moves team member to employees
-        moveTeamMemberToEmployees(id) {
-            const teamMember = this.teamMembers.find((m) => m.id === id);
-            teamMember.isSelected = false;
-            teamMember.isTeamMember = false;
-            const index = this.teamMembers.findIndex((m) => m === teamMember);
+        moveTeamMemberToEmployees() {
+            this.employees.push(this.selectedTeamMember);
+            const index = this.teamMembers.findIndex((e) => e.id === this.selectedTeamMember.id);
             this.teamMembers.splice(index,1);
-            this.employees.push(teamMember);
+            this.selectedTeamMember = null;
 
-            //sorts by team leader in employees to choose
-            this.employees.sort(function(x,y) {
+            this.employees.forEach((m) => {
+                if(m.isSelected === true && m.isSelectedAsTeamLeader === false) {
+                    m.isSelected = false;
+                }
+            })
+            
+            //sorts by team leader in team members
+            this.teamMembers.sort(function(x,y) {
                 return (x === y) ? 0 : x.isSelectedAsTeamLeader ? -1 : 1;
             });
+
+            this.$refs.moveTeamMemberToEmployeesButton.disabled = true;
         },
 
         selectTeamLeader() {
@@ -516,9 +543,9 @@ export default {
                     m.isSelected = false;
                 }
             })
-            
+
             const selectedTeamLeaderId = this.selectedTeamLeaderId;
-            
+
             if(selectedTeamLeaderId !== 'empty') {
 
                 this.selectedTeamLeader = this.employees.find((e) => e.id === selectedTeamLeaderId);
@@ -557,7 +584,7 @@ export default {
                     this.employees.push(teamLeader);
                 }
             } else {
-                
+
                 while(this.employees.find((e) => e.isSelectedAsTeamLeader === true)) {
                     const index = this.employees.findIndex((e) => e.isSelectedAsTeamLeader === true);
                     this.employees.splice(index,1);
@@ -583,8 +610,6 @@ export default {
             });
 
         },
-
-
     },
 }
 
