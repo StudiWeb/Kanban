@@ -1,11 +1,22 @@
 <template>
-    <div class="row mb-4">
-        <div class="px-0 d-flex flex-wrap">
-            <base-button @click="setPage('employee-list')" class="m-2 btn-primary">LIST OF EMPLOYEES</base-button>
-            <base-button @click="setPage('add-employee')" class="m-2 btn-success">ADD EMPLOYEE</base-button>
-            <base-button @click="setPage('edit-employee')" class="m-2 btn-warning">EDIT EMPLOYEE</base-button>
-            <base-button @click="setPage('delete-employee')" class="m-2 btn-danger">DELETE EMPLOYEE</base-button>
-        </div>
+    <div class="row">
+       <div class="h3 ml-2">Manage employees</div> 
+    </div>
+    <div class="row mt-4">
+        <ul class="nav nav-pills">
+            <li class="nav-item">
+                <button @click="setPage('employee-list','list')" id="list" class="nav-link active-list ml-2">List of employees</button>
+            </li>
+            <li class="nav-item">
+                <button @click="setPage('add-employee','add')" id="add" class="nav-link" href="#">Add employee</button>
+            </li>
+            <li class="nav-item">
+                <button @click="setPage('edit-employee','edit')" id="edit" class="nav-link" href="#">Edit employee</button>
+            </li>
+            <li class="nav-item">
+                <button @click="setPage('delete-employee','delete')" id="delete" class="nav-link">Delete employee</button>
+            </li>
+        </ul>
     </div>
     <component 
         :is="page" 
@@ -38,8 +49,31 @@ export default {
     },
 
     methods: {
-        setPage(cmp) {
-            this.page = cmp;
+        setPage(page,tab) {
+
+            $('button.nav-link').each(function() {
+                $(this).removeClass('active-list');
+                $(this).removeClass('active-add');
+                $(this).removeClass('active-edit');
+                $(this).removeClass('active-delete');
+            });
+            
+            switch(tab) {
+                case 'list':
+                    $('#list').addClass('active-list');
+                    break;
+                case 'add':
+                    $('#add').addClass('active-add');
+                    break;
+                case 'edit':
+                    $('#edit').addClass('active-edit');
+                    break;
+                case 'delete':
+                    $('#delete').addClass('active-delete');
+                    break;
+            }
+
+            this.page = page;
         },
 
         changeKey() {
@@ -54,3 +88,5 @@ export default {
 }
 
 </script>
+
+

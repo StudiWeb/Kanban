@@ -7,7 +7,7 @@
         :key="componentKey"
         :componentName="componentName">
         <template #header>
-            <span class="h4 d-block my-4">Create team</span>
+            <span class="h5 d-block my-4">Create team</span>
         </template>
     </create-team>
 </section>

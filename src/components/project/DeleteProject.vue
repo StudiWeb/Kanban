@@ -1,9 +1,10 @@
 <template>
     <section class="row flex-column mx-0">
         <div class="px-0 form-group col-xl-6">
-            <label class="h4 my-4">Select project</label>
+            <div class="h5 my-4">Delete project</div>
+            <label>Select project</label>
             <select class="form-control" @change="selectProject">
-                <option value="empty"></option>
+                <option value="empty" selected>none</option>
                 <option v-for="p in projects" :key="p.id" :value="p.id">{{p.name}}</option>
             </select>
         </div>
@@ -51,13 +52,13 @@
                 </div>
 
 
-                <button @click="openModal" class="btn btn-danger mr-4 align-self-end">Delete project</button>
+                <button @click="openDeleteProjectModal" class="btn btn-danger mr-4 align-self-end">Delete project</button>
             </div>
         </div> 
     </section>
 
     <teleport to="body">
-        <base-modal>
+        <base-modal id="deleteProjectModal">
             <template #header>Delete project</template>
             <template #body>
                 <div class="row">
@@ -105,7 +106,7 @@
                     <p>Are you sure you want to delete this project?</p>
                     <div>
                         <button @click="deleteProject" class="btn btn-success mr-2">Yes</button>
-                        <button @click="closeModal" class="btn btn-primary">No</button>
+                        <button @click="closeDeleteProjectModal" class="btn btn-primary">No</button>
                     </div>
                 </div>
             </template>
@@ -113,10 +114,15 @@
     </teleport>
 
     <teleport to="body">
-        <base-toast>
+        <base-modal id="serverResponseModal">
             <template #header>Server response</template>
             <template #body>You have just deleted the project.</template>
-        </base-toast>
+            <template #footer>
+                <div class="d-flex justify-content-end">
+                    <button @click="closeServerResponseModal" class="btn btn-primary">Ok</button>
+                </div>
+            </template>
+        </base-modal>
     </teleport>
 
 </template>
@@ -140,6 +146,8 @@ const firebase = initializeApp(firebaseConfig);
 const database = getDatabase(firebase);
 
 export default {
+
+    emits: ['change-key'],
 
     data() {
         return {
@@ -180,12 +188,17 @@ export default {
 
     methods: {
 
-        openModal() {
-            $('#modal').modal('show');
+        openDeleteProjectModal() {
+            $('#deleteProjectModal').modal('show');
         },
 
-        closeModal() {
-            $('#modal').modal('hide');
+        closeDeleteProjectModal() {
+            $('#deleteProjectModal').modal('hide');
+        },
+
+        closeServerResponseModal() {
+            $('#serverResponseModal').modal('hide');
+            this.$emit('change-key');
         },
 
         selectProject(e) {
@@ -206,8 +219,8 @@ export default {
 
         deleteProject() {
             set(ref(database, 'projects/' + this.selectedProject.id),null);
-            $('#modal').modal('hide');
-            $('#toast').toast('show');
+            $('#deleteProjectModal').modal('hide');
+            $('#serverResponseModal').modal('show');
         }
     }
 }

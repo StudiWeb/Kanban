@@ -1,7 +1,7 @@
 <template>
     <section class="row flex-column mx-0">
         <div class="col-xl-6 px-0">
-            <div class="h4 my-4">List of projects</div>
+            <div class="h5 my-4">List of projects</div>
         </div>
         <div class="col-xl-6 px-0">
             <table class="table table-striped">

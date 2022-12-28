@@ -2,7 +2,7 @@
 
 <div v-if="componentName === 'EditTeam'" class="row">
     <div class="col-xl-6">
-        <div class="h4 my-4">Edit team</div>
+        <div class="h5 my-4">Edit team</div>
         <div class="px-0 form-group">
             <label>Select team</label>
             <select v-model="selectedTeamId" class="form-control">
@@ -33,7 +33,7 @@
 
 <div class="row">
     <div class="col-xl-6">
-        <div class="h4 my-4">Add employees to your team</div>
+        <div class="h5 my-4">Add employees to your team</div>
         <div class="d-flex flex-column flex-lg-row align-items-md-start">
             <the-employees title="Employees">
                 <template #default>
@@ -505,6 +505,18 @@ export default {
                 this.moveTeamMemberToEmployeesButton.disabled = true;
             }
 
+            this.employees.forEach((e) => {
+                if(!e.isSelectedAsTeamLeader) {
+                    e.isSelected = false;
+                }
+            })
+
+            this.teamMembers.forEach((m) => {
+                if(!m.isSelectedAsTeamLeader) {
+                    m.isSelected = false;
+                }
+            })
+            
             const selectedTeamLeaderId = this.selectedTeamLeaderId;
             
             if(selectedTeamLeaderId !== 'empty') {

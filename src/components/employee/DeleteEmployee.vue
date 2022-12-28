@@ -3,7 +3,7 @@
 <section>
     <div class="row flex-column mx-0">
         <div class="col-xl-6 px-0">
-            <div class="h4 my-4 px-0">Delete employee</div>
+            <div class="h5 my-4 px-0">Delete employee</div>
         </div>
         <div class="card px-0 col-xl-6">
             <div class="card-body">

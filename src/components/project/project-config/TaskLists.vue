@@ -17,7 +17,8 @@
                     <td>{{task.name}}</td>
                     <td>{{task.description}}</td>
                     <td>
-                        <div class="my-1" v-for="e in task.employees" :key="e.id">{{e.name}} - <span class="font-italic">{{e.job}}</span></div>
+                        <div v-if="task.employees === 'none'">none</div>
+                        <div v-else class="my-1" v-for="e in task.employees" :key="e.id">{{e.name}} - <span class="font-italic">{{e.job}}</span></div>
                     </td>
                     <td>{{task.startDate}}</td>
                     <td>{{task.endDate}}</td>
@@ -40,8 +41,6 @@ export default {
     },
 
     mounted() {
-        let tasks = [];
-
         fetch('https://vue-kanban-5ad84-default-rtdb.europe-west1.firebasedatabase.app/projects.json')
         .then((response) => {
             if(response.ok) {
@@ -49,14 +48,13 @@ export default {
             }
         })
         .then((data) => {
-            for(const d in data) {
-                if(d === this.selectedProjectId) {
-                    for(const t in data[d].tasks) {
-                        tasks.push(data[d].tasks[t]);
+            for(const id in data) {
+                if(id === this.selectedProjectId) {
+                    for(const t in data[id].tasks) {
+                        this.tasks.push(data[id].tasks[t]);
                     }
                 }             
             }
-            this.tasks = tasks;
         });
     },
 

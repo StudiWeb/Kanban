@@ -31,6 +31,7 @@
             <div class="form-group">
                 <label>Choose employee</label>
                 <select v-model="selectedEmployeeIds" multiple id="selectedEmployeeIds" class="form-control">
+                    <option value="empty">none</option>
                     <option v-for="m in projectMembers" :key="m.id" :value="m.id">
                         {{m.name}} - {{m.job}} 
                         <span v-if="m.isSelectedAsProjectManager">(PM)</span> <span v-if="m.isSelectedAsTeamLeader">(TL)</span>
@@ -50,7 +51,8 @@
                     <div class="col-4 d-flex flex-column"><span class="font-weight-bold">Task name</span>{{taskName}}</div>
                     <div class="col-8 d-flex flex-column">
                         <span class="font-weight-bold">{{(selectedEmployeeIdsLength === 1 ) ? 'Employee' : 'Employees'}} </span>
-                        <p class="mb-1" v-for="e in selectedEmployees" :key="e.id">{{e.name}} - {{e.job}}</p>
+                        <p v-if="selectedEmployees.find((e) => e === 'none')">none</p>
+                        <p v-else class="mb-1" v-for="e in selectedEmployees" :key="e.id">{{e.name}} - {{e.job}}</p>
                     </div>
                 </div>
                 <div class="row my-2">
@@ -93,7 +95,7 @@
             <template #header>Server response</template>
             <template #body>You have just edited the task successfully!.</template>
             <template #footer>
-                <div>
+                <div class="d-flex justify-content-end">
                     <button @click="closeServerResponseModal" class="btn btn-primary">Ok</button> 
                 </div>
             </template>
@@ -137,7 +139,6 @@ export default {
             projectMembers: [],
             tasks: [],
             taskNames: [],
-
             selectedEmployeeIds: [],
             selectedEmployees: [],
             canShowEditTaskPanel: false,
@@ -154,7 +155,6 @@ export default {
         },
 
         selectedTaskId(taskId) {
-
             if(taskId !== 'empty') {
                 //resets employees who are asigned to task
                 this.selectedEmployeeIds = [];
@@ -165,7 +165,11 @@ export default {
                 this.startDate = task.startDate;
                 this.endDate = task.endDate;
                 //inits employees who are asigned to task
-                task.employees.forEach((t) => this.selectedEmployeeIds.push(t.id));
+                if(task.employees === 'none') {
+                    this.selectedEmployeeIds.push('empty');
+                } else {
+                    task.employees.forEach((t) => this.selectedEmployeeIds.push(t.id));
+                }
                 this.canShowEditTaskPanel = true;
             } else {
                 this.canShowEditTaskPanel = false;
@@ -175,11 +179,16 @@ export default {
         selectedEmployeeIds(employeIds) {
             this.selectedEmployees = [];
             //sets selectedEmployees
-            employeIds.forEach((id) => {
+            if(employeIds.find((id) => id === 'empty')) {
+                this.selectedEmployees.push('none');
+            } else {
+                employeIds.forEach((id) => {
                 this.selectedEmployees.push(
                     this.projectMembers.find((member) => member.id === id)
                 )
             })
+            }
+
         },
 
         taskName(name) {
@@ -272,9 +281,13 @@ export default {
             const endDate = task.endDate;
             //takes employees ids from employees who are asigned to task from the begining
             let employeesIds = [];
-            task.employees.forEach((e) => {
-                employeesIds.push(e.id);
-            })
+            if(task.employees === 'none') {
+                employeesIds.push('empty');
+            } else {
+                task.employees.forEach((e) => {
+                    employeesIds.push(e.id);
+                })
+            }
 
             let validation = false;
 
@@ -331,7 +344,7 @@ export default {
                 description: this.taskDescription,
                 startDate: this.startDate,
                 endDate: this.endDate,
-                employees: this.selectedEmployees,
+                employees: this.selectedEmployees.find((e) => e === 'none') ? 'none' : this.selectedEmployees,
                 status: 'todo'
             });
             $('#editTaskModal').modal('hide');

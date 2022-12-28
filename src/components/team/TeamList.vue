@@ -1,6 +1,6 @@
 <template>
     <section class="row mx-0 d-flex flex-column">
-        <div class="h4 my-4">List of teams</div>
+        <div class="h5 my-4">List of teams</div>
         <table class="table table-striped col-xl-6">
             <thead>
                 <tr>

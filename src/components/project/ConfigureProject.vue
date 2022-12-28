@@ -1,7 +1,7 @@
 <template>
     <section class="row flex-column mx-0">
         <div class="px-0 col-xl-6">
-            <div class="h4 my-4">Configure project</div>
+            <div class="h5 my-4">Configure project</div>
         </div>
         <div class="px-0 col-xl-6 form-group">
             <label>Select project</label>
@@ -109,7 +109,7 @@ export default {
             $('.nav-link').each( function() {
                 $(this).removeClass('active');
             });
-            const selector = 'ul li:nth-child(' + number +') button';
+            const selector = '.nav-tabs li:nth-child(' + number +') button';
             $(selector).addClass('active');
         },
 

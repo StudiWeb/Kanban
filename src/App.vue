@@ -69,4 +69,28 @@ body {
   border-color: transparent;
   box-shadow: 0 0 0 3px rgba(255, 255, 255, .25);
 }
+
+/*
+ * styles for tabs in components
+ */
+
+.nav-pills .active-list {
+    color : #fff;
+    background-color: #007bff !important;
+}
+
+.nav-pills .active-add {
+    color : #fff;
+    background-color: #28a745 !important;
+}
+
+.nav-pills .active-edit {
+    color : #343a40;
+    background-color: #ffc107 !important;
+}
+
+.nav-pills .active-delete {
+    color : #fff;
+    background-color: #dc3545 !important;
+}
 </style>

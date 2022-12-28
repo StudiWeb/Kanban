@@ -2,8 +2,9 @@
 <section>
     <div class="row">
         <div class="col-xl-6">
+            <div class="h5 my-4">Delete team</div>
             <div class="form-group">
-                <label class="h4 my-4">Select team</label>
+                <label>Select team</label>
                 <select @change="selectTeam" v-model="teamId" class="form-control">
                     <option value="empty">none</option>
                     <option v-for="team in teams" :key="team.id" :value="team.id">{{team.name}}</option>

@@ -21,6 +21,7 @@
         <div class="form-group">
             <label>Choose employee</label>
             <select v-model="selectedEmployeeIds" multiple id="selectedEmployeeIds" class="form-control">
+                <option value="empty">none</option>
                 <option v-for="m in projectMembers" :key="m.id" :value="m.id" >
                     {{m.name}} - {{ m.job }}
                 </option>
@@ -37,8 +38,11 @@
                 <div class="row">
                     <div class="col-4 d-flex flex-column"><span class="font-weight-bold">Task name</span>{{taskName}}</div>
                     <div class="col-8 d-flex flex-column">
-                        <span class="font-weight-bold">{{(getEmployeeIdsLength === 1 ) ? 'Employee' : 'Employees'}} </span>
-                        <p class="mb-1" v-for="e in selectedEmployees" :key="e.id">{{e.name}} - {{e.job}}</p>
+                        <span class="font-weight-bold">{{(employeeIdsLength === 1 ) ? 'Employee' : 'Employees'}} </span>
+                        <p v-if="selectedEmployees.find((e) => e === 'none')">none</p>
+                        <p v-else class="mb-1" v-for="e in selectedEmployees" :key="e.id">
+                             {{e.name}} - {{e.job}}
+                        </p>
                     </div>
                 </div>
                 <div class="row my-2">
@@ -174,7 +178,15 @@ export default {
         },
 
         selectedEmployeeIds(ids) {
-            if(ids.length !== 0) {
+            if(ids.find((id) => id === 'empty') && ids.length > 1) {
+                this.selectedEmployeeIds = ['empty'];
+                $('#selectedEmployeeIds').removeClass('is-invalid');
+                $('#selectedEmployeeIds').addClass('is-valid');
+            } 
+            else if (ids.length === 0) {
+                $('#selectedEmployeeIds').removeClass('is-valid');
+                $('#selectedEmployeeIds').addClass('is-invalid');
+            } else {
                 $('#selectedEmployeeIds').removeClass('is-invalid');
                 $('#selectedEmployeeIds').addClass('is-valid');
             }
@@ -183,7 +195,7 @@ export default {
     },
 
     computed: {
-        getEmployeeIdsLength(ids) {
+        employeeIdsLength(ids) {
             return ids.length;
         }
     },
@@ -205,7 +217,6 @@ export default {
                         isProjectVisible: false
                     });
                 }
-
                 this.selectedProject = this.projects.find((p) => p.id === this.selectedProjectId);
                 this.projectMembers = this.selectedProject.team.members;
 
@@ -249,15 +260,19 @@ export default {
             }
 
             if(validation) {
-
-                this.selectedEmployeeIds.forEach((id) => {
-                    if(this.projectMembers.find((pm) => pm.id === id)) {
-                        this.selectedEmployees.push(
-                            this.projectMembers.find((pm) => pm.id === id)
-                        );
-                    }
-                });
-
+                if(this.selectedEmployeeIds.find((id) => id === 'empty')) {
+                    this.selectedEmployees = [];
+                    this.selectedEmployees.push('none');
+                } else {
+                    this.selectedEmployees = [];
+                    this.selectedEmployeeIds.forEach((id) => {
+                        if(this.projectMembers.find((pm) => pm.id === id)) {
+                            this.selectedEmployees.push(
+                                this.projectMembers.find((pm) => pm.id === id)
+                            );
+                        }
+                    });
+                }
                 $('#createTaskModal').modal('show');
             } else {
                 this.validationMesseage = 'Please fill the form.';
@@ -285,7 +300,7 @@ export default {
                 description: this.taskDescription,
                 startDate : this.startDate,
                 endDate: this.endDate,
-                employees: this.selectedEmployees,
+                employees: this.selectedEmployees.find((e) => e === 'none') ? 'none' : this.selectedEmployees,
                 status: 'todo'
             });
             $('#createTaskModal').modal('hide');

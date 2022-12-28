@@ -1,11 +1,22 @@
 <template>
-    <div class="row mb-4">
-        <div class="px-0 d-flex flex-wrap">
-            <base-button @click="setPage('team-list')" class="m-2 btn-primary">LIST OF TEAMS</base-button>
-            <base-button @click="setPage('create-team')" class="m-2 btn-success">CREATE TEAM</base-button>
-            <base-button @click="setPage('edit-team')" class="m-2 btn-warning">EDIT TEAM</base-button>
-            <base-button @click="setPage('delete-team')" class="m-2 btn-danger">DELETE TEAM</base-button>
-        </div>
+    <div class="row">
+       <div class="h3 ml-2">Manage teams</div> 
+    </div>
+    <div class="row mt-4">
+        <ul class="nav nav-pills">
+            <li class="nav-item">
+                <button @click="setPage('team-list','list')" id="list" class="nav-link active-list ml-2">List of teams</button>
+            </li>
+            <li class="nav-item">
+                <button @click="setPage('create-team','add')" id="add" class="nav-link" href="#">Add team</button>
+            </li>
+            <li class="nav-item">
+                <button @click="setPage('edit-team','edit')" id="edit" class="nav-link" href="#">Edit team</button>
+            </li>
+            <li class="nav-item">
+                <button @click="setPage('delete-team','delete')" id="delete" class="nav-link">Delete team</button>
+            </li>
+        </ul>
     </div>
     <component
         :is="page"
@@ -37,8 +48,31 @@ export default {
     },
 
     methods: {
-        setPage(cmp) {
-            this.page = cmp;
+        setPage(page,tab) {
+
+            $('button.nav-link').each(function() {
+                $(this).removeClass('active-list');
+                $(this).removeClass('active-add');
+                $(this).removeClass('active-edit');
+                $(this).removeClass('active-delete');
+            });
+
+            switch(tab) {
+                case 'list':
+                    $('#list').addClass('active-list');
+                    break;
+                case 'add':
+                    $('#add').addClass('active-add');
+                    break;
+                case 'edit':
+                    $('#edit').addClass('active-edit');
+                    break;
+                case 'delete':
+                    $('#delete').addClass('active-delete');
+                    break;
+            }
+
+            this.page = page;
         },
 
         changeKey() {
