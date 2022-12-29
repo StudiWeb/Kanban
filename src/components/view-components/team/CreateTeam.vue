@@ -35,9 +35,13 @@
     <div class="col-xl-6">
         <div class="h5 my-4">Add employees to your team</div>
         <div class="d-flex flex-column flex-lg-row align-items-md-start">
-
             <!-- employees to choose -->
             <the-employees title="Employees">
+                <template #search>
+                    <div class="form-group">
+                        <input v-model="search" type="search" class="form-control" placeholder="search by name or job">
+                    </div>
+                </template>
                 <template #default>
                     <team-member
                         v-for="e in employees"
@@ -142,7 +146,8 @@ export default {
             teamMembers: [],
             moveEmployeeToTeamButton: null,
             moveTeamMemberToEmployeesButton: null,
-            teamNameExists: false
+            teamNameExists: false,
+            search: ''
         }
     },
 
@@ -195,6 +200,7 @@ export default {
         },
 
         selectedTeamId(id) {
+            
             if(id !== 'empty') {
                 $('#teamName').removeClass('is-invalid');
                 $('#teamName').addClass('is-valid');
@@ -247,15 +253,12 @@ export default {
                         this.teamMembers = this.selectedTeam.members;
                     }
 
-
-
                     this.teamMembers.forEach((t) => {
                         while(this.employees.find((e) => e.id === t.id)) {
                             const index = this.employees.findIndex((e) => e.id === t.id);
                             this.employees.splice(index,1);
                         }
                     });
-
 
                     this.employees.push(this.selectedTeamLeader);
                     //sorts employees by name
@@ -283,7 +286,59 @@ export default {
                 //rerenders component if a team is not selected
                 this.$emit('change-key');
             }
+           
         },
+
+        search(phrase) {
+            //gets employees
+            fetch('https://vue-kanban-5ad84-default-rtdb.europe-west1.firebasedatabase.app/employees.json')
+            .then((response) => {
+                if(response.ok) {
+                return response.json();
+            }})
+            .then((data) => {
+                this.employees = [];
+
+                for (const id in data) {
+                    //gets employees
+                    this.employees.push({
+                    id: id,
+                    name: data[id].name,
+                    job: data[id].job,
+                    isProjectManager: data[id].isProjectManager,
+                    isTeamLeader: data[id].isTeamLeader,
+                    isSelected: false,
+                    isSelectedAsTeamLeader: false
+                });
+
+                //sorts employees by name
+                this.employees.sort(function(a,b) {
+                if ( a.name < b.name ){
+                    return -1;
+                }
+                if ( a.name > b.name ){
+                    return 1;
+                }
+                    return 0;
+                });
+
+                this.teamMembers.forEach((t) => {
+                while(this.employees.find((e) => e.id === t.id)) {
+                    const index = this.employees.findIndex((e) => e.id === t.id);
+                    this.employees.splice(index,1);
+                }});
+
+                this.employees = this.employees.filter((m) =>(m.name.toLowerCase().includes(phrase.toLowerCase()) || m.job.toLowerCase().includes(phrase.toLowerCase())));
+
+                if(this.selectedTeamLeader !== null) {
+                    this.employees.push(this.selectedTeamLeader);
+                    //sorts by team leader in employees
+                    this.employees.sort(function(x,y) {
+                        return (x === y) ? 0 : x.isSelectedAsTeamLeader ? -1 : 1;
+                    });
+                }
+            }});
+        }
     },
 
     computed: {

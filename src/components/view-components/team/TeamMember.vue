@@ -25,6 +25,7 @@ export default {
 
 tr:hover {
     cursor: pointer;
+    background-color: #73c586;
 }
 
 .selected {
