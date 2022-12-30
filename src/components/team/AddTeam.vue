@@ -7,7 +7,7 @@
         :key="componentKey"
         :componentName="componentName">
         <template #header>
-            <span class="h5 d-block my-4">Create team</span>
+            <span class="h5 d-block my-4">Add team</span>
         </template>
     </create-team>
 </section>
@@ -103,7 +103,7 @@ export default {
 
     data() {
         return{
-            componentName: 'CreateTeam',
+            componentName: 'AddTeam',
             teamLeader: 'empty',
             teamName: '',
             teamMembers: [],
@@ -151,7 +151,6 @@ export default {
         }).
         then((data) => {
             for(const id in data) {
-                
                 this.teamNames.push(data[id].name);
             }
         });
@@ -159,7 +158,6 @@ export default {
 
     methods: {
         openModal(name,members,teamLeaderId) {
-            console.log(teamLeaderId)
 
             if(name === '' && teamLeaderId === 'empty') {
                 this.validationAddTeamModalMesseage = 'Your teams needs a name and a team leader.';
@@ -194,6 +192,7 @@ export default {
 
         closeServerResponseModal() {
             $('#serverResponseModal').modal('hide');
+            this.componentKey += 1;
         },
 
         changeKey() {
@@ -202,7 +201,6 @@ export default {
 
         addTeam() {
 
-            
             this.employees.forEach((e) => {
                 this.teamMembers.forEach((m) => {
                     if(e.id === m.id) {

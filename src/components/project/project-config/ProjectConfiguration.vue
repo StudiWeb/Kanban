@@ -19,7 +19,7 @@
     </div>
 
     <teleport to="body">
-        <base-modal>
+        <base-modal id="projectConfigurationModal">
             <template #header>Project configuration</template>
             <template #body>
                 <div>{{modalMesseage}}</div>
@@ -34,10 +34,15 @@
     </teleport>
 
     <teleport to="body">
-        <base-toast>
+        <base-modal id="serverResponseModal">
             <template #header>Server response</template>
             <template #body>You have just changed project visible value to {{isProjectVisible}}.</template>
-        </base-toast>
+            <template #footer>
+                <div class="d-flex justify-content-end">
+                    <button @click="closeServerResponseModal" class="btn btn-primary">Ok</button>
+                </div>
+            </template>
+        </base-modal>
     </teleport>
 
 </template>

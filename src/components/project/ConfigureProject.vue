@@ -1,9 +1,9 @@
 <template>
-    <section class="row flex-column mx-0">
+    <section  class="row flex-column mx-0">
         <div class="px-0 col-xl-6">
             <div class="h5 my-4">Configure project</div>
         </div>
-        <div class="px-0 col-xl-6 form-group">
+        <div  class="px-0 col-xl-6 form-group">
             <label>Select project</label>
             <select v-model="selectedProjectId" class="form-control">
                 <option value="empty" selected>none</option>
@@ -36,7 +36,7 @@
                     :selectedProjectId="selectedProjectId"
                     @change-key="changeKey" 
                     :is="componentName" 
-                    :key="componentKey">
+                    :key="componentKey" >
                 </component>
             </div>
         </div>
@@ -44,6 +44,7 @@
 </template>
 
 <script>
+import { computed } from 'vue';
 
 import ProjectConfiguration from './project-config/ProjectConfiguration.vue';
 import EditProject from './project-config/EditProject.vue';
@@ -80,7 +81,14 @@ export default {
             } else {
                 this.isProjectSelected = false;
             }
+            this.componentKey +=1;
         },
+    },
+
+    provide() {
+        return {
+            selectedProjectId: computed(() => this.selectedProjectId),
+        }
     },
 
     mounted() {
@@ -114,7 +122,22 @@ export default {
         },
 
         changeKey() {
-            this.componentKey += 1;
+            fetch('https://vue-kanban-5ad84-default-rtdb.europe-west1.firebasedatabase.app/projects.json')
+            .then((response) => response.json())
+            .then((data) => {
+                this.projects = [];
+                for(const id in data) {
+                    this.projects.push({
+                        id: id,
+                        name: data[id].name,
+                        projectManager: data[id].projectManager,
+                        startDate: data[id].startDate,
+                        endDate: data[id].endDate,
+                        team: data[id].team,
+                    });
+                }
+                this.componentKey += 1;
+            });
         }
     }
 

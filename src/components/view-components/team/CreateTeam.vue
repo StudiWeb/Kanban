@@ -90,7 +90,7 @@
                 </template>
             </the-employees>
         </div>
-        <button v-if="componentName === 'CreateTeam'" @click="openModal" ref="saveTeamButton" class="btn btn-success my-4 align-self-start align-self-xl-end">Save team</button>
+        <button v-if="componentName === 'AddTeam'" @click="openModal" ref="saveTeamButton" class="btn btn-success my-4 align-self-start align-self-xl-end">Save team</button>
         <button v-if="componentName === 'EditTeam'" @click="openModal" ref="editTeamButton" class="btn btn-warning my-4 align-self-start align-self-xl-end">Edit team</button>
     </div>
 </div>
@@ -154,7 +154,7 @@ export default {
     watch: {
 
         enteredTeamName(name) {
-            if(this.componentName === 'CreateTeam') {
+            if(this.componentName === 'AddTeam') {
                 if(name === '')  {
                     this.teamNameExists = false;
                     $('#teamName').removeClass('is-valid');
@@ -271,6 +271,12 @@ export default {
                         }
                         return 0;
                     });
+                    
+                    //sorts by team leader in employees
+                    this.employees.sort(function(x,y) {
+                        return (x === y) ? 0 : x.isSelectedAsTeamLeader ? -1 : 1;
+                    });
+
                     //sorts team leaders by name
                     this.teamLeaders.sort(function(a,b) {
                         if ( a.name < b.name ){
@@ -444,13 +450,12 @@ export default {
                 });
             }
         });
-
     },
 
     methods: {
 
         openModal() {
-            if(this.componentName === 'CreateTeam') {
+            if(this.componentName === 'AddTeam') {
                 this.$emit('open-modal',
                     this.enteredTeamName,
                     this.teamMembers,
@@ -631,7 +636,7 @@ export default {
                     let newEmployeesArray = this.employees.filter(x => !this.teamMembers.includes(x));
                     this.employees = newEmployeesArray;
 
-                    const teamLeader = this.teamMembers.find((tm) => tm.id === selectedTeamLeaderId);teamLeader.isTeamMember = true;
+                    const teamLeader = this.teamMembers.find((tm) => tm.id === selectedTeamLeaderId);
                     this.selectedTeamLeader = teamLeader;
                     teamLeader.isSelected = true;
                     teamLeader.isTeamMember = true;

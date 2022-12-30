@@ -118,8 +118,8 @@ export default {
             selectedTeamId: 'empty',
             validationEditTeamModalMesseage: '',
             teamNames: [],
-            teamLeaders: []
-
+            teamLeaders: [],
+            employees: []
         }
     },
 
@@ -137,7 +137,7 @@ export default {
             }
         });
 
-        //gets team leaders
+        //gets team leaders and employees
         fetch('https://vue-kanban-5ad84-default-rtdb.europe-west1.firebasedatabase.app/employees.json')
         .then((response) => {
             if(response.ok) {
@@ -146,6 +146,15 @@ export default {
         })
         .then((data) => {
             for (const id in data) {
+
+                this.employees.push({
+                    id: id,
+                    name: data[id].name,
+                    job: data[id].job,
+                    isProjectManager: data[id].isProjectManager,
+                    isTeamLeader: data[id].isTeamLeader,
+                });
+
                 //gets project managers
                 if(data[id].isTeamLeader) {
                     this.teamLeaders.push({
@@ -213,6 +222,7 @@ export default {
 
         closeServerResponseModal() {
             $('#serverResponseModal').modal('hide');
+            this.$emit('change-key');
         },
 
         closeEditTeamModal() {
@@ -224,11 +234,28 @@ export default {
         },
 
         editTeam() {
+
+            this.employees.forEach((e) => {
+                this.teamMembers.forEach((m) => {
+                    if(e.id === m.id) {
+                        //updates isTeamMember property to true for all employees who are members of this team
+                        update(ref(database,'employees/' + e.id),{
+                            isTeamMember: true
+                        })
+                    }
+                    if(e.id === m.id && m.isSelectedAsTeamLeader === true) {
+                        //updates isSelectedAsTeamLeader property to true for an employee who is a team leader of this team
+                        update(ref(database,'employees/' + e.id),{
+                            isSelectedAsTeamLeader: true
+                        })
+                    }
+                });
+            });  
+
             update(ref(database, 'teams/' + this.selectedTeamId), {
                 name: this.teamName,
                 members: this.teamMembers
             });
-
             $('#editTeamModal').modal('hide');
             $('#serverResponseModal').modal('show');
         }
