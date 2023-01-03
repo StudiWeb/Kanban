@@ -13,14 +13,12 @@
                 <tr>
                     <th scope="col">#</th>
                     <th scope="col">Team name</th>
-                    <th scope="col">Team leader</th>
                 </tr>
             </thead>
             <tbody>
                 <tr v-for="(team,index) in teams" @mouseover="showTooltip(team.id)" class="team" rel="tooltip" data-toggle="tooltip" data-html="true" data-placement="bottom" :title="tooltip">
                     <td>{{++index}}</td>
                     <td>{{team.name}}</td>
-                    <td>{{team.teamLeader.name}}</td>
                 </tr>
             </tbody>
         </table>
@@ -54,8 +52,6 @@ export default {
                 this.teams.push({
                     id: id,
                     name: data[id].name,
-                    projectManager: data[id].members.find((x) => x.isSelectedAsProjectManager === true),
-                    teamLeader: data[id].members.find((x) => x.isSelectedAsTeamLeader === true),
                     members: data[id].members
                 });
             }
@@ -69,8 +65,7 @@ export default {
                 this.tooltip = '<div class="font-weight-bold">Team members</div>';
                 const members = this.teams.find((team) => team.id === teamId).members;
                 members.forEach((m) => {
-                    let job =  m.isSelectedAsTeamLeader ? m.job + '<span class="font-weight-bold">' + ' (TL)' + '</span>' : m.job;
-                    this.tooltip += '<div class="my-2">' + m.name +' - ' + '<span>' + job + '</span>' + '</div>'
+                    this.tooltip += '<div class="my-2">' + m.name +' - ' + '<span>' + m.job + '</span>' + '</div>'
                 });
             }
         },

@@ -18,20 +18,11 @@
                         <thead>
                             <th class="col-4">Name</th>
                             <th class="col-4">Job position</th>
-                            <th class="col-4 text-center">Team leader</th>
                         </thead>
                         <tbody>
                             <tr v-for="member in selectedTeam.members" :key="member.id">
                                 <td>{{member.name}}</td>
                                 <td>{{member.job}}</td>
-                                <td class="text-center">
-                                    <svg v-if="member.isSelectedAsTeamLeader" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check" viewBox="0 0 16 16">
-                                        <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>
-                                    </svg>
-                                    <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-dash" viewBox="0 0 16 16">
-                                        <path d="M4 8a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7A.5.5 0 0 1 4 8z"/>
-                                    </svg>
-                                </td>
                             </tr>
                         </tbody>
                     </table>
@@ -233,12 +224,6 @@ export default {
                                 isTeamMember: false
                             });
                         }
-                        if(e.id === m.id && m.isSelectedAsTeamLeader === true) {
-                            //updates isSelectedAsTeamLeader property to true for an employee who is a team leader of this team
-                            update(ref(database,'employees/' + e.id),{
-                                isSelectedAsTeamLeader: false
-                        })
-                    }
                     })
                 })
                 

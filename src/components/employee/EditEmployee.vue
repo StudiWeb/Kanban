@@ -13,15 +13,6 @@
                             <option v-for="e in employees" :value="e.id">{{e.name}}</option>
                         </select>
                     </div>
-                    <div v-if="canShowAlert" class="alert alert-info d-flex align-items-center" role="alert">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-exclamation-octagon" viewBox="0 0 16 16">
-                            <path d="M4.54.146A.5.5 0 0 1 4.893 0h6.214a.5.5 0 0 1 .353.146l4.394 4.394a.5.5 0 0 1 .146.353v6.214a.5.5 0 0 1-.146.353l-4.394 4.394a.5.5 0 0 1-.353.146H4.893a.5.5 0 0 1-.353-.146L.146 11.46A.5.5 0 0 1 0 11.107V4.893a.5.5 0 0 1 .146-.353L4.54.146zM5.1 1 1 5.1v5.8L5.1 15h5.8l4.1-4.1V5.1L10.9 1H5.1z"/>
-                            <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995z"/>
-                        </svg>
-                        <div class="ml-3">
-                           {{alertMesseage}}
-                        </div>
-                    </div>
                     <div class="form-group">
                         <label for="name">Name</label>
                         <input v-model="name" ref="name" disabled type="text" class="form-control" id="name">
@@ -98,7 +89,7 @@
 <script>
 
 import { initializeApp } from "firebase/app";
-import { getDatabase , update , ref } from "firebase/database";
+import { getDatabase , update ,get, child, ref } from "firebase/database";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBiWEX-ygigO9Kj04kWtjASKLJ3RX20uuM",
@@ -126,13 +117,8 @@ export default {
             selectedEmployeeId: 'empty',
             selectedEmployee: null,
             employees: [],
-            projects: [],
-            teams: [],
-            isEmployeeEdidted: false,
-            canEditEmployee: true,
-            canShowAlert: false,
-            alertMesseage: '',
             modalValidationMesseage: '',
+            alertMesseage: ''
         }
     },
 
@@ -150,91 +136,19 @@ export default {
                 this.$refs.job.disabled = false;
                 this.$refs.isProjectManager.disabled = false;
                 this.$refs.isTeamLeader.disabled = false;
-
-                const isEmployeeProjectManager = this.employees.find((e) => {
-                    if(e.id === id) {
-                        if(e.isSelectedAsProjectManager === true) {
-                            return true;
-                        } else {
-                            return false;
-                        }
-                    }
-                });
-
-                const isEmployeeTeamLeader = this.employees.find((e) => {
-                    if(e.id === id) {
-                        if(e.isSelectedAsTeamLeader === true) {
-                            return true;
-                        } else {
-                            return false;
-                        }
-                    }
-                });
-                
-                const isEmployeeTeamMember = this.employees.find((e) => {
-                    if(e.id === id) {
-                        if(e.isTeamMember === true) {
-                            return true;
-                        } else {
-                            return false;
-                        }
-                    }
-                });
-                
-                if(isEmployeeProjectManager && isEmployeeTeamLeader) {
-                    this.canEditEmployee = true;
-                    this.canShowAlert = true;
-                    this.alertMesseage = 'This employee is a project manager of an existing project and team leader of an existing team. You can only change his job position.';
-                    this.$refs.name.disabled = true;
-                    this.$refs.job.disabled = false;
-                    this.$refs.isProjectManager.disabled = true;
-                    this.$refs.isTeamLeader.disabled = true;
-                } else if(isEmployeeProjectManager) {
-                    this.canShowAlert = true;
-                    this.alertMesseage = 'This employee is a project manager of an existing project. You can only change his job position and team leader properties.';
-                    this.$refs.name.disabled = true;
-                    this.$refs.job.disabled = false;
-                    this.$refs.isProjectManager.disabled = true;
-                    this.$refs.isTeamLeader.disabled = true;
-                } else if(isEmployeeTeamLeader) {
-                    this.canShowAlert = true;
-                    this.alertMesseage = 'This employee is a team leader of an existing team. You can only change his job position and project manager properties.';
-                    this.$refs.name.disabled = true;
-                    this.$refs.job.disabled = false;
-                    this.$refs.isProjectManager.disabled = false;
-                    this.$refs.isTeamLeader.disabled = true;
-                } else if(isEmployeeTeamMember) {
-                    this.canShowAlert = true;
-                    this.alertMesseage = 'This employee is a member of an existing team. You cannot change his name property.';
-                    this.$refs.name.disabled = true;
-                    this.$refs.job.disabled = false;
-                    this.$refs.isProjectManager.disabled = false;
-                    this.$refs.isTeamLeader.disabled = false;
-                } else {
-                    this.canShowAlert = false;
-                    this.alertMesseage = '';
-                    this.$refs.name.disabled = false;
-                    this.$refs.job.disabled = false;
-                    this.$refs.isProjectManager.disabled = false;
-                    this.$refs.isTeamLeader.disabled = false;
-                }
-
             } 
             //no employee is choosen
             //all fields are disabled
             else {
                 this.selectedEmployee = null;
-                this.alertMesseages = [];
                 this.name = '';
                 this.job = '';
                 this.isProjectManager = false;
                 this.isTeamLeader = false;
-                this.canShowAlert = false;
                 this.$refs.name.disabled = true;
                 this.$refs.job.disabled = true;
                 this.$refs.isProjectManager.disabled = true;
                 this.$refs.isTeamLeader.disabled = true;
-                this.$refs.editEmployeeButton.disabled = false;
                 $('#noChoosenEmployeeModal').modal('show');
             }
         }
@@ -242,42 +156,22 @@ export default {
 
     mounted() {
         //gets all employees
-        fetch('https://vue-kanban-5ad84-default-rtdb.europe-west1.firebasedatabase.app/employees.json',{
-        method: 'GET',
-        })
-        .then((response) => {
-            if(response.ok) {
-                return response.json();
+        get(child(ref(database), 'employees')).then((snapshot) => {
+            if (snapshot.exists()) {
+                for (const id in snapshot.val()) {
+                    this.employees.push({
+                        id: id,
+                        name: snapshot.val()[id].name,
+                        job: snapshot.val()[id].job,
+                        isProjectManager: snapshot.val()[id].isProjectManager,
+                        isTeamLeader: snapshot.val()[id].isTeamLeader,
+                    });
+                }
+            } else {
+                console.log("No employees data available");
             }
-        })
-        .then((data) => {
-            for (const id in data) {
-                this.employees.push({
-                    id: id,
-                    name: data[id].name,
-                    job: data[id].job,
-                    isProjectManager: data[id].isProjectManager,
-                    isTeamLeader: data[id].isTeamLeader,
-                    isSelectedAsProjectManager: data[id].isSelectedAsProjectManager,
-                    isSelectedAsTeamLeader: data[id].isSelectedAsTeamLeader,
-                    isTeamMember: data[id].isTeamMember
-                });
-            }
-        });
-
-        //gets all teams
-        fetch('https://vue-kanban-5ad84-default-rtdb.europe-west1.firebasedatabase.app/teams.json')
-        .then((response) => response.json())
-        .then((data) => {
-            for(const id in data) {
-                this.teams.push({
-                    id: id,
-                    teamName: data[id].teamName,
-                    projectManager: data[id].members.find((x) => x.isSelectedAsProjectManager === true),
-                    teamLeader: data[id].members.find((x) => x.isSelectedAsTeamLeader === true),
-                    teamMembers: data[id].members
-                });
-            }
+        }).catch((error) => {
+            console.error(error);
         });
     }, 
 
@@ -333,11 +227,19 @@ export default {
         editEmployee() {
             //updates selected employee in employees
             update(ref(database, 'employees/' + this.selectedEmployeeId), {
-                name: this.name,
-                job: this.job,
+                name: this.name.trim(),
+                job: this.job.trim(),
                 isProjectManager: this.isProjectManager,
                 isTeamLeader: this.isTeamLeader
+            })
+            .then(() => {
+                // Data saved successfully!
+            })
+            .catch((error) => {
+                // The write failed...
+                console.log(error);
             });
+
             $('#editEmployeeModal').modal('hide');
             $('#serverResponseModal').modal('show');
         }

@@ -1,4 +1,4 @@
-<template>    
+<template>
     <section class="row flex-column mx-0">
         <div class="col-xl-6 px-0">
             <div class="h5 my-4">Create project</div>
@@ -11,7 +11,7 @@
             </div>
             <div class="form-group">
                 <label>Start date</label>
-                <input v-model="startDate" type="date" class="form-control" id="startDate">
+                <input v-model="startDate" :max="endDate" type="date" class="form-control" id="startDate">
             </div>
             <div class="form-group">
                 <label>End date</label>
@@ -19,9 +19,9 @@
             </div>
             <div class="form-group">
                 <label>Select team</label>
-                <select 
+                <select
                     v-model="selectedTeamId"
-                    class="form-control" 
+                    class="form-control"
                     id="team">
                     <option value="empty"></option>
                     <option v-for="t in teams" :key="t.id" :value="t.id">{{t.name}}</option>
@@ -30,20 +30,33 @@
             <div class="form-group">
                 <label>Project manager</label>
                 <select
-                    v-model="selectedProjectManagerId" 
+                    v-model="selectedProjectManagerId"
+                    @change="selectSupervisor('projectManager')"
                     ref="projectManagerSelect"
-                    class="form-control" 
+                    class="form-control"
                     id="projectManager">
-                    <option value="empty" selected>none</option>
+                    <option value="empty">none</option>
                     <option v-for="pm in projectManagers" :key="pm.id" :value="pm.id">{{pm.name}}</option>
+                </select>
+            </div>
+            <div class="px-0 form-group">
+                <label>Team leader</label>
+                <select
+                    v-model="selectedTeamLeaderId"
+                    @change="selectSupervisor('teamLeader')"
+                    id="teamLeader"
+                    ref="teamLeaderSelect"
+                    class="form-control">
+                    <option value="empty">none</option>
+                    <option v-for="tl in teamLeaders" :key="tl.id" :value="tl.id">{{tl.name}}</option>
                 </select>
             </div>
         </div>
 
         <div class="card col-xl-6 px-0" v-if="selectedTeamId !== 'empty'">
-            <div class="card-header h5 text-center">{{getProjectName}}</div>
+            <div class="card-header h5 text-center">{{projectName}}</div>
             <div class="card-body d-flex flex-column">
-                <div class="card-title mt-2 mb-4 h5">{{getTeamName}}</div>
+                <div class="card-title mt-2 mb-4 h5">{{teamName}}</div>
                 <table class="table table-striped">
                     <thead>
                         <th>Name</th>
@@ -98,11 +111,11 @@
                     <div class="row my-2">
                         <div class="col-6">
                             <div class="font-weight-bold">Project manager</div>
-                            <div>{{selectedProjectManagerName}}</div>
+                            <div>{{projectManagerName}}</div>
                         </div>
                         <div>
                             <div class="font-weight-bold">Team leader</div>
-                            <div>{{selectedTeamLeaderName}}</div>
+                            <div>{{teamLeaderName}}</div>
                         </div>
                     </div>
                     <p><span class="font-weight-bold">Team members</span></p>
@@ -119,7 +132,7 @@
                                     {{member.name}}
                                     <span class="font-weight-bold">
                                         {{
-                                            member.isSelectedAsProjectManager && member.isSelectedAsTeamLeader ? '(PM) (TL)' : 
+                                            member.isSelectedAsProjectManager && member.isSelectedAsTeamLeader ? '(PM) (TL)' :
                                             member.isSelectedAsProjectManager ? '(PM)':
                                             member.isSelectedAsTeamLeader ? '(TL)' : ''
                                         }}
@@ -139,7 +152,7 @@
                         </div>
                     </div>
                 </template>
-        </base-modal>  
+        </base-modal>
     </teleport>
 
     <teleport to="body">
@@ -171,7 +184,7 @@
 <script>
 
 import { initializeApp } from "firebase/app";
-import { getDatabase,get,child, update, ref } from "firebase/database";
+import { getDatabase,get,child, push, ref } from "firebase/database";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBiWEX-ygigO9Kj04kWtjASKLJ3RX20uuM",
@@ -196,19 +209,17 @@ export default {
             startDate: '',
             endDate: '',
             selectedTeamId: 'empty',
+            selectedTeam: null,
             selectedProjectManagerId: 'empty',
             selectedProjectManager: null,
-            selectedTeam: null,
-            selectedTeamName: '',
-            selectedProjectManagerName: '',
-            selectedTeamLeaderName: '',
+            selectedTeamLeaderId: 'empty',
+            selectedTeamLeader: null,
+            teamName: '',
             projectManagers: [],
+            teamLeaders: [],
             teamMembers: [],
-            teams: [],
-            employees: [],
-            team: [],
-            isDataFilledPropely: false,
-            projectNames: []
+            projectNames: [], 
+            teams: []
         }
     },
 
@@ -230,17 +241,18 @@ export default {
 
         selectedTeamId(teamId) {
             if(teamId !== 'empty') {
-
-                fetch('https://vue-kanban-5ad84-default-rtdb.europe-west1.firebasedatabase.app/teams/' + teamId + '.json')
-                .then((response) => {
-                    if(response.ok) {
-                        return response.json();
+                //gets selected team
+                get(child(ref(database), 'teams/' + teamId)).then((snapshot) => {
+                    if (snapshot.exists()) {
+                        this.teamName = snapshot.val().name;
+                        this.teamMembers = snapshot.val().members;
+                        this.$refs.projectManagerSelect.disabled = false;
+                        this.$refs.teamLeaderSelect.disabled = false;
+                    } else {
+                        console.log("No teams data available");
                     }
-                }).then((data) => {
-                    this.selectedTeamName = data.name;
-                    this.selectedTeamLeaderName = data.members.find((m) => m.isSelectedAsTeamLeader === true).name;
-                    this.teamMembers = data.members;
-                    this.$refs.projectManagerSelect.disabled = false;
+                    }).catch((error) => {
+                    console.error(error);
                 });
 
                 $('#team').addClass('is-valid');
@@ -248,65 +260,8 @@ export default {
                 this.selectedTeamLeaderName = '';
                 this.teamMembers = null;
                 this.$refs.projectManagerSelect.disabled = true;
+                this.$refs.teamLeaderSelect.disabled = true;
                 $('#team').removeClass('is-valid');
-            }
-        },
-
-        selectedProjectManagerId(projectManagerId) {
-            if(this.selectedTeamId !== 'empty') {
-
-                fetch('https://vue-kanban-5ad84-default-rtdb.europe-west1.firebasedatabase.app/teams/' + this.selectedTeamId + '.json')
-                .then((response) => {
-                    if(response.ok) {
-                        return response.json();
-                    }
-                }).then((data) => {
-                    //basic squad 
-                    const team = data.members;
-
-                    if(projectManagerId !== 'empty') {
-
-                        this.selectedProjectManagerName = this.projectManagers.find((pm) => pm.id === projectManagerId).name;
-                        this.selectedProjectManager = this.projectManagers.find((pm) => pm.id === projectManagerId);
-                        this.selectedProjectManager.isSelectedAsProjectManager = true;
-                        const projectManager = this.selectedProjectManager;
-
-                        if(team.find((m) => m.id === projectManagerId)) {
-                            //restores to original state of team members list
-                            this.teamMembers = team.filter(x => !this.teamMembers.includes(x));
-                            //sets isSelectedAsProjectManager property for all team members
-                            while(this.teamMembers.find((m) => m.isSelectedAsProjectManager === true)) {
-                                const index = this.teamMembers.findIndex((m) => m.isSelectedAsProjectManager === true);
-                                this.teamMembers[index].isSelectedAsProjectManager = false;
-                            }
-                            //sets isSelectedAsProjectManager property to selected project manager
-                            const index = this.teamMembers.findIndex((m) => m.id === projectManagerId);
-                            this.teamMembers[index].isSelectedAsProjectManager = true;
-                        } else {
-                            //restores to original state of team members list
-                            this.teamMembers = team.filter(x => !this.teamMembers.includes(x));
-                            //ads new project manager
-                            this.teamMembers.push(projectManager)
-                        }
-
-                        //sorts by project manager
-                        this.teamMembers.sort(function(x,y) {
-                            return (x === y) ? 0 : x.isSelectedAsProjectManager ? -1 : 1;
-                        });
-
-                        $('#projectManager').removeClass('is-invalid');
-                        $('#projectManager').addClass('is-valid');
-
-                    } else {
-                        //restores to original state of team members list
-                        this.teamMembers = team.filter(x => !this.teamMembers.includes(x));
-                        $('#projectManager').removeClass('is-valid');
-                    }
-                     
-                });
-
-            } else {
-                
             }
         },
 
@@ -326,95 +281,184 @@ export default {
             } else {
                 $('#endDate').removeClass('is-valid');
             }
-        }
-        
+        },
+
+        selectedProjectManagerId(id) {
+            if(id !== 'empty') {
+                $('#projectManager').removeClass('is-invalid');
+                $('#projectManager').addClass('is-valid');
+            } else {
+                $('#projectManager').addClass('is-valid');
+            }
+        },
+
+        selectedTeamLeaderId(id) {
+            if(id !== 'empty') {
+                $('#teamLeader').removeClass('is-invalid');
+                $('#teamLeader').addClass('is-valid');
+            } else {
+                $('#teamLeader').addClass('is-valid');
+            }
+        },
+
     },
 
     computed: {
-        getTeamName() {
-            if(this.selectedTeam !== null) {
-                return this.selectedTeam.name;
+        projectManagerName() {
+            if(this.selectedProjectManager) {
+                return this.selectedProjectManager.name;
             }
         },
 
-        getProjectName() {
-            if(this.projectName === '' ) {
-                return 'Project name'
-            } else {
-                return this.projectName;
+        teamLeaderName() {
+            if(this.selectedTeamLeader) {
+                return this.selectedTeamLeader.name;
             }
-        },
+        }
     },
 
     mounted() {
         this.$refs.projectManagerSelect.disabled = true;
+        this.$refs.teamLeaderSelect.disabled = true;
 
-        //gets project managers
-        fetch('https://vue-kanban-5ad84-default-rtdb.europe-west1.firebasedatabase.app/employees.json')
-        .then((response) => {
-            if(response.ok) {
-                return response.json();
+        //gets all project managers and team leaders
+        get(child(ref(database), 'employees'))
+        .then((snapshot) => {
+            if (snapshot.exists()) {
+                for(const id in snapshot.val()) {
+                    if(snapshot.val()[id].isProjectManager) {
+                        this.projectManagers.push({
+                            id: id,
+                            name: snapshot.val()[id].name,
+                            job: snapshot.val()[id].job,
+                            isProjectManager: snapshot.val()[id].isProjectManager,
+                            isTeamLeader: snapshot.val()[id].isTeamLeader,
+                        });
+                    }
+
+                    if(snapshot.val()[id].isTeamLeader) {
+                        this.teamLeaders.push({
+                            id: id,
+                            name: snapshot.val()[id].name,
+                            job: snapshot.val()[id].job,
+                            isProjectManager: snapshot.val()[id].isProjectManager,
+                            isTeamLeader: snapshot.val()[id].isTeamLeader,
+                        });
+                    }
+                }
+            } else {
+                console.log("No employees data available");
             }
-        })
-        .then((data) => {
-            for(const id in data) {
-                if(data[id].isProjectManager) {
-                    this.projectManagers.push({
+        }).catch((error) => {
+            console.error(error);
+        });
+
+        //gets all teams
+        get(child(ref(database), 'teams'))
+        .then((snapshot) => {
+            if (snapshot.exists()) {
+                for(const id in snapshot.val()) {
+                    this.teams.push({
                         id: id,
-                        name: data[id].name,
-                        job: data[id].job,
-                        isProjectManager: data[id].isProjectManager,
-                        isTeamLeader: data[id].isTeamLeader,
-                        isSelectedAsProjectManager: data[id].isSelectedAsProjectManager
+                        name: snapshot.val()[id].name,
+                        members: snapshot.val()[id].members
                     });
                 }
+            } else {
+                console.log("No teams data available");
             }
-        })
-
-        //gets teams
-        fetch('https://vue-kanban-5ad84-default-rtdb.europe-west1.firebasedatabase.app/teams.json')
-        .then((response) => {
-            if(response.ok) {
-                return response.json();
-            }
-        })
-        .then((data) => {
-            for(const id in data) {
-                this.teams.push({
-                    id: id,
-                    name: data[id].name,
-                    members: data[id].members
-                });
-            }
+        }).catch((error) => {
+            console.error(error);
         });
 
-        //gets employees
-        fetch('https://vue-kanban-5ad84-default-rtdb.europe-west1.firebasedatabase.app/employees.json',{
-        method: 'GET',
-        })
-        .then((response) => {
-            if(response.ok) {
-                return response.json();
-            }
-        })
-        .then((data) => {
-            for (const id in data) {
-                this.employees.push({ 
-                    id: id,
-                    name: data[id].name,
-                    job: data[id].job,
-                    isProjectManager: data[id].isProjectManager,
-                    isTeamLeader: data[id].isTeamLeader,
-                });
-            }
-        });
-
-        //gets all task names
+        //gets all project names in use
         get(child(ref(database), 'projects'))
-            .then((data) => {
-                if (data.exists()) {
-                    for(const id in data.val()) {
-                        this.projectNames.push(data.val()[id].name);    
+        .then((snapshot) => {
+            if (snapshot.exists()) {
+                for(const id in snapshot.val()) {
+                    this.projectNames.push(snapshot.val()[id].name);
+                }
+            } else {
+                console.log("No projects data available");
+            }
+        }).catch((error) => {
+            console.error(error);
+        });
+    },
+
+    methods: {
+
+        selectSupervisor(supervisor) {
+
+            get(child(ref(database), 'teams/' + this.selectedTeamId))
+            .then((snapshot) => {
+                if (snapshot.exists()) {
+
+                    const baseTeam = snapshot.val().members;
+
+                    /**
+                     * project manager
+                     */
+                    if(supervisor === 'projectManager') {
+                        const projectManagerId = this.selectedProjectManagerId;
+                        const projectManager = this.projectManagers.find((pm) => pm.id === projectManagerId);
+                        this.selectedProjectManager = projectManager;
+
+                        if(projectManagerId !== 'empty') {
+                            this.teamMembers.forEach((m) => m.isSelectedAsProjectManager = false);
+
+                            if(this.teamMembers.find((m) => m.id === projectManagerId)) {
+                                this.teamMembers.find((m) => m.id === projectManagerId).isSelectedAsProjectManager = true;
+                            }
+                            else {
+                                projectManager.isSelectedAsProjectManager = true;
+                                this.teamMembers.push(projectManager)
+                            }
+
+                            this.teamMembers.forEach((m) => {
+                            if(!baseTeam.find((x) => x.id === m.id)) {
+                                if(((m.isSelectedAsProjectManager === false || typeof m.isSelectedAsProjectManager  === 'undefined'))
+                                    && (m.isSelectedAsTeamLeader === false  || typeof m.isSelectedAsTeamLeader  === 'undefined')) {
+                                    const index = this.teamMembers.findIndex((x) => x.id === m.id);
+                                    this.teamMembers.splice(index,1);
+                                    } 
+                                }
+                            });
+                        }
+
+                        this.selectedProjectManager.isSelectedAsProjectManager = true;
+                    }
+
+                    /**
+                     * team leader
+                     */
+                    if(supervisor === 'teamLeader') {
+                        const teamLeaderId = this.selectedTeamLeaderId;
+                        const teamLeader = this.teamLeaders.find((tl) => tl.id === teamLeaderId);
+                        this.selectedTeamLeader = teamLeader;
+
+                        if(teamLeaderId !== 'empty') {
+                            this.teamMembers.forEach((m) => m.isSelectedAsTeamLeader = false);
+
+                            if(this.teamMembers.find((m) => m.id === teamLeaderId)) {
+                                this.teamMembers.find((m) => m.id === teamLeaderId).isSelectedAsTeamLeader = true;
+                            }
+                            else {
+                                teamLeader.isSelectedAsTeamLeader = true;
+                                this.teamMembers.push(teamLeader)
+                            }
+
+                            this.teamMembers.forEach((m) => {
+                            if(!baseTeam.find((x) => x.id === m.id)) {
+                                if(((m.isSelectedAsProjectManager === false || typeof m.isSelectedAsProjectManager  === 'undefined'))
+                                    && (m.isSelectedAsTeamLeader === false  || typeof m.isSelectedAsTeamLeader  === 'undefined')) {
+                                    const index = this.teamMembers.findIndex((x) => x.id === m.id);
+                                    this.teamMembers.splice(index,1);
+                                    } 
+                                }
+                            });
+                        }
+                        this.selectedTeamLeader.isSelectedAsTeamLeader = true;
                     }
                 } else {
                     console.log("No data available");
@@ -422,9 +466,8 @@ export default {
             }).catch((error) => {
                 console.error(error);
             });
-    },
 
-    methods: {
+        },
 
         openModal() {
 
@@ -436,29 +479,37 @@ export default {
                     $('#projectName').addClass('is-invalid');
                 }
             } else {
+                validation = false;
                 $('#projectName').addClass('is-invalid');
             }
 
-            if(this.selectedProjectManagerId === 'empty') {
-                $('#projectManager').addClass('is-invalid');
-                validation = false;
-            }
-
             if(this.startDate === '') {
+                validation = false;
                 $('#startDate').addClass('is-invalid');
             }
 
             if(this.endDate === '') {
+                validation = false;
                 $('#endDate').addClass('is-invalid');
             }
-            
+
+            if(this.selectedProjectManagerId === 'empty') {
+                validation = false;
+                $('#projectManager').addClass('is-invalid');
+            }
+
+            if(this.selectedTeamLeaderId === 'empty') {
+                validation = false;
+                $('#teamLeader').addClass('is-invalid');
+            }
+
             if(validation) {
                 $('#addProjectModal').modal('show');
-            } 
+            }
             else {
                 $('#validationAddProjectModal').modal('show');
             }
-            
+
         },
 
         closeResponseServerModal() {
@@ -477,28 +528,26 @@ export default {
         createProject() {
 
             this.selectedTeam = {
-                name: this.selectedTeamName,
+                name: this.teamName,
                 members: this.teamMembers
             };
 
-            update(ref(database,'employees/' + this.selectedProjectManagerId),{
-                isSelectedAsProjectManager: true
-            });
-
-            fetch('https://vue-kanban-5ad84-default-rtdb.europe-west1.firebasedatabase.app/projects.json',{
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify( {
-                    name : this.projectName.trim(),
-                    team: this.selectedTeam,
-                    startDate: this.startDate.trim(),
-                    endDate: this.endDate.trim(),
-                    projectManager: this.selectedProjectManager,
-                    isProjectVisible: false,
-                })
+            push(ref(database, 'projects/'), {
+                name : this.projectName.trim(),
+                team: this.selectedTeam,
+                startDate: this.startDate.trim(),
+                endDate: this.endDate.trim(),
+                projectManager: this.selectedProjectManager,
+                teamLeader: this.selectedTeamLeader,
+                isProjectVisible: false,
             })
+            .then(() => {
+                // Data saved successfully!
+            })
+            .catch((error) => {
+                // The write failed...
+                console.log(error);
+            });
 
             $('#addProjectModal').modal('hide');
             $('#responseServerModal').modal('show');

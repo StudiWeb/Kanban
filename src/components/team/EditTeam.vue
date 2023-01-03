@@ -19,10 +19,6 @@
                         <div class="font-weight-bold">Team name</div>
                         <div>{{teamName}}</div>
                     </div>
-                    <div>
-                        <div class="font-weight-bold">Team leader</div>
-                        <div>{{teamLeaderName}}</div>
-                    </div>
                 </div> 
                 <table class="table table-striped">
                     <thead>
@@ -32,10 +28,7 @@
                     <tbody>
                         <tr v-for="member in teamMembers" :key="member.id">
                             <td>{{member.name}}</td>
-                            <td>
-                                {{member.job}} 
-                                <span v-if="member.isSelectedAsTeamLeader" class="font-weight-bold">(TL)</span> 
-                            </td>
+                            <td>{{member.job}}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -83,7 +76,7 @@
 <script>
 
 import { initializeApp } from "firebase/app";
-import { getDatabase, update, ref } from "firebase/database";
+import { getDatabase, update, ref,get, child } from "firebase/database";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBiWEX-ygigO9Kj04kWtjASKLJ3RX20uuM",
@@ -97,6 +90,16 @@ const firebaseConfig = {
 
 const firebase = initializeApp(firebaseConfig);
 const database = getDatabase(firebase);
+
+function sortByName(x,y) {
+    if(x.name > y.name) {
+        return 1;
+    }
+    if(x.name< y.name) {
+        return -1;
+    }
+    return 0;
+}
 
 import CreateTeam from './../view-components/team/CreateTeam.vue';
 
@@ -112,107 +115,86 @@ export default {
         return {
             componentName : 'EditTeam',
             keyComponent: 0,
-            teamLeaderName: '',
             teamName: '',
             teamMembers: [],
             selectedTeamId: 'empty',
             validationEditTeamModalMesseage: '',
             teamNames: [],
-            teamLeaders: [],
             employees: []
         }
     },
 
     mounted() {
-        //gets all team names that are in use
-        fetch('https://vue-kanban-5ad84-default-rtdb.europe-west1.firebasedatabase.app/teams.json')
-        .then((response) => {
-            if(response.ok) {
-                return response.json();
-            }
-        }).
-        then((data) => {
-            for(const id in data) {
-                this.teamNames.push(data[id].name);
-            }
+        //gets all team names that are in use        
+        get(child(ref(database), 'teams')).then((snapshot) => {
+        if (snapshot.exists()) {
+            for(const id in snapshot.val()) {
+                this.teamNames.push(snapshot.val()[id].name);
+            }    
+        } else {
+            console.log("No teams data available");
+        }
+        }).catch((error) => {
+            console.error(error);
         });
 
-        //gets team leaders and employees
-        fetch('https://vue-kanban-5ad84-default-rtdb.europe-west1.firebasedatabase.app/employees.json')
-        .then((response) => {
-            if(response.ok) {
-                return response.json();
-            }
-        })
-        .then((data) => {
-            for (const id in data) {
-
+        //gets all employees
+        get(child(ref(database), 'employees')).then((snapshot) => {
+        if (snapshot.exists()) {
+            for (const id in snapshot.val()) {
                 this.employees.push({
                     id: id,
-                    name: data[id].name,
-                    job: data[id].job,
-                    isProjectManager: data[id].isProjectManager,
-                    isTeamLeader: data[id].isTeamLeader,
+                    name: snapshot.val()[id].name,
+                    job: snapshot.val()[id].job,
                 });
-
-                //gets project managers
-                if(data[id].isTeamLeader) {
-                    this.teamLeaders.push({
-                        id: id,
-                        name: data[id].name,
-                        job: data[id].job,
-                        isProjectManager: data[id].isProjectManager,
-                        isTeamLeader: data[id].isTeamLeader,
-                    })
-                }
             }
+        } else {
+            console.log("No employees data available");
+        }
+        }).catch((error) => {
+            console.error(error);
         });
+
     },
 
     methods: {
 
-        openModal(name,members,teamLeaderId,teamId) {
+        openModal(name,members,teamId) {
+            //gets all employees
+            get(child(ref(database), 'teams/' + teamId)).then((snapshot) => {
+            if (snapshot.exists()) { 
 
-            if(teamLeaderId !== 'empty') {
-                this.teamLeaderName = this.teamLeaders.find((tl) => tl.id === teamLeaderId).name;
-            } else {
-                this.teamLeaderName = '';
-            }
-
-            fetch('https://vue-kanban-5ad84-default-rtdb.europe-west1.firebasedatabase.app/teams/' + teamId + '.json')
-            .then((response) => {
-                if(response.ok) {
-                    return response.json();
-                }
-            })
-            .then((data) => {
-
-                if(data) {
-                    const teamNameStoredInDatabase = data.name;
-                    const teamMembersStoredInDatabase = data.members
-                    
-                    if(name === '' || teamLeaderId === 'empty') {
-                        this.validationEditTeamModalMesseage = 'Your team needs a name and a team leader.';
-                        $('#validationEditTeamModal').modal('show');
-                    } 
-                    else if(teamNameStoredInDatabase === name && (JSON.stringify(teamMembersStoredInDatabase) === JSON.stringify(members))) {
-                        this.validationEditTeamModalMesseage = 'You must enter any change in a team to edit it.';
-                        $('#validationEditTeamModal').modal('show');
-                    }
-                    else if(this.teamNames.find((teamName) => teamName === name) && teamNameStoredInDatabase !== name) {
-                        this.validationEditTeamModalMesseage = 'This team name is already used. Please type different team name.';
-                        $('#validationEditTeamModal').modal('show');
-                    }
-                    else {
-                        this.teamName = name;
-                        this.teamMembers = members;
-                        this.selectedTeamId = teamId;
-                        $('#editTeamModal').modal('show');
-                    }
-                } else {
-                    this.validationEditTeamModalMesseage = 'Please select a team.'
+                const teamNameStoredInDatabase = snapshot.val().name;
+                const teamMembersStoredInDatabase = snapshot.val().members;
+                
+                if(name === '') {
+                    this.validationEditTeamModalMesseage = 'Your team needs a name.';
+                    $('#validationEditTeamModal').modal('show');
+                } 
+                else if(members.length === 0) {
+                    this.validationEditTeamModalMesseage = 'Your team needs at least one member.';
                     $('#validationEditTeamModal').modal('show');
                 }
+                else if(teamNameStoredInDatabase === name && (JSON.stringify(teamMembersStoredInDatabase.sort(sortByName)) === JSON.stringify(members.sort(sortByName)))) {
+                    this.validationEditTeamModalMesseage = 'You must enter any change in a team to edit it.';
+                    $('#validationEditTeamModal').modal('show');
+                }
+                else if(this.teamNames.find((teamName) => teamName === name) && teamNameStoredInDatabase !== name) {
+                    this.validationEditTeamModalMesseage = 'This team name is already used. Please type different team name.';
+                    $('#validationEditTeamModal').modal('show');
+                }
+                else {
+                    this.teamName = name;
+                    this.teamMembers = members;
+                    this.selectedTeamId = teamId;
+                    $('#editTeamModal').modal('show');
+                }
+            } else {
+                this.validationEditTeamModalMesseage = 'Please select a team.'
+                $('#validationEditTeamModal').modal('show');
+            }
+            }).catch((error) => {
+                console.error(error);
             });
         },
 
@@ -235,22 +217,16 @@ export default {
 
         editTeam() {
 
-            this.employees.forEach((e) => {
-                this.teamMembers.forEach((m) => {
-                    if(e.id === m.id) {
-                        //updates isTeamMember property to true for all employees who are members of this team
-                        update(ref(database,'employees/' + e.id),{
-                            isTeamMember: true
-                        })
-                    }
-                    if(e.id === m.id && m.isSelectedAsTeamLeader === true) {
-                        //updates isSelectedAsTeamLeader property to true for an employee who is a team leader of this team
-                        update(ref(database,'employees/' + e.id),{
-                            isSelectedAsTeamLeader: true
-                        })
-                    }
-                });
-            });  
+            // this.employees.forEach((e) => {
+            //     this.teamMembers.forEach((m) => {
+            //         if(e.id === m.id) {
+            //             //updates isTeamMember property to true for all employees who are members of this team
+            //             update(ref(database,'employees/' + e.id),{
+            //                 isTeamMember: true
+            //             })
+            //         }
+            //     });
+            // });  
 
             update(ref(database, 'teams/' + this.selectedTeamId), {
                 name: this.teamName,

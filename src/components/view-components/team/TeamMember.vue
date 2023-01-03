@@ -8,7 +8,7 @@
 <script>
 
 export default {
-    props: ['id','name','job'],
+    props: ['id','name','job','class'],
 
     emits: ['select-member'],
 
@@ -25,18 +25,26 @@ export default {
 
 tr:hover {
     cursor: pointer;
-    background-color: #73c586;
 }
 
-.selected {
-    color: #fff;
-    background-color: #73c586;
+tr[class=""]:hover {
+    cursor: pointer;
+    background-color: #f8f9fa;
 }
 
-.selectedAsTeamLeader {
-    pointer-events: none;
+.selectedToMove {
     color: #fff;
     background-color: #28a745;
+}
+
+.selectedToMove:hover {
+    color: #fff;
+    background-color: #28a745;
+}
+
+.selectedToDelete {
+    color: #fff;
+    background-color: #dc3545;
 }
 
 </style>

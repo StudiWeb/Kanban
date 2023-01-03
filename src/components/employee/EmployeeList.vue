@@ -49,6 +49,22 @@
 
 <script>
 
+import { initializeApp } from "firebase/app";
+import { getDatabase ,get, child, ref } from "firebase/database";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyBiWEX-ygigO9Kj04kWtjASKLJ3RX20uuM",
+    authDomain: "vue-kanban-5ad84.firebaseapp.com",
+    databaseURL: "https://vue-kanban-5ad84-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "vue-kanban-5ad84",
+    storageBucket: "vue-kanban-5ad84.appspot.com",
+    messagingSenderId: "538900623860",
+    appId: "1:538900623860:web:330924a5a67488f22109a1"
+};
+
+const firebase = initializeApp(firebaseConfig);
+const database = getDatabase(firebase);
+
 export default {
 
     data() {
@@ -59,25 +75,26 @@ export default {
     },
 
     mounted() {
-        fetch('https://vue-kanban-5ad84-default-rtdb.europe-west1.firebasedatabase.app/employees.json',{
-        method: 'GET',
-        })
-        .then((response) => {
-            if(response.ok) {
-                return response.json();
+        //gets all employees
+        get(child(ref(database), 'employees')).then((snapshot) => {
+            if (snapshot.exists()) {
+                for (const id in snapshot.val()) {
+                    this.employees.push({
+                        id: id,
+                        name: snapshot.val()[id].name,
+                        job: snapshot.val()[id].job,
+                        isProjectManager: snapshot.val()[id].isProjectManager,
+                        isTeamLeader: snapshot.val()[id].isTeamLeader,
+                    });
+                }
+
+                this.numberOfEmployees = this.employees.length;
+            } else {
+                console.log("No employees data available");
             }
-        })
-        .then((data) => {
-            for (const id in data) {
-                this.employees.push({ 
-                    name: data[id].name,
-                    job: data[id].job,
-                    isProjectManager: data[id].isProjectManager,
-                    isTeamLeader: data[id].isTeamLeader,
-                });
-            }
-            this.numberOfEmployees = this.employees.length;
-        })
+        }).catch((error) => {
+            console.error(error);
+        });
     } 
 }
 

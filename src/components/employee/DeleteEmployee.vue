@@ -28,14 +28,14 @@
                         <div class="card my-4">
                             <div class="card-header">Employee details</div>
                             <div class="card-body">
-                                <p class="card-text"><span class="font-weight-bold">Name: </span>{{getEmployeeName}}</p>
-                                <p class="card-text"><span class="font-weight-bold">Job position: </span>{{getEmployeeJob}}</p>
+                                <p class="card-text"><span class="font-weight-bold">Name: </span>{{employeeName}}</p>
+                                <p class="card-text"><span class="font-weight-bold">Job position: </span>{{employeeJob}}</p>
                                 <p class="card-text"><span class="font-weight-bold">Project manager: </span> {{isEmployeeProjectManager ? 'Yes' : 'No'}}</p>
                                 <p class="card-text"><span class="font-weight-bold">Team leader</span> {{isEmployeeTeamLeader ? 'Yes' : 'No'}}</p>
                             </div>
                         </div>
                     </div>
-                    <button @click="openModal" ref="deleteEmployeeButton" type="submit" class="btn btn-danger">Delete employee</button>
+                    <button @click="openDeleteEmployeeModal" ref="deleteEmployeeButton" type="submit" class="btn btn-danger">Delete employee</button>
                 </div>
             </div>
         </div>
@@ -43,12 +43,12 @@
 </section>
 
 <teleport to="body">
-    <base-modal>
+    <base-modal id="deleteEmployeeModal">
         <template #header>Delete employee</template>
         <template #body>
             <div v-if="selectedEmployeeId !== 'empty'">
-                <p><span class="font-weight-bold">Name:</span>  {{getEmployeeName}}</p>
-                <p><span class="font-weight-bold">Job position:</span>  {{getEmployeeJob}}</p>
+                <p><span class="font-weight-bold">Name:</span>  {{employeeName}}</p>
+                <p><span class="font-weight-bold">Job position:</span>  {{employeeJob}}</p>
                 <p><span class="font-weight-bold">Project manager:</span> {{isEmployeeProjectManager ? 'Yes' : 'No'}}</p>
                 <p><span class="font-weight-bold">Team leader:</span> {{isEmployeeTeamLeader ? 'Yes' : 'No'}}</p>
             </div>
@@ -60,7 +60,7 @@
                     <div>Are you sure do you want to delete this employee?</div>
                     <div>
                         <button @click="deleteEmployee" type="button" class="btn btn-success mr-2">Yes</button>
-                        <button @click="closeModal" type="button" class="btn btn-primary">No</button>
+                        <button @click="closeDeleteEmployeeModal" type="button" class="btn btn-primary">No</button>
                     </div>
                 </div>
                 <div v-else class="d-flex justify-content-end">
@@ -90,7 +90,7 @@
 <script>
 
 import { initializeApp } from "firebase/app";
-import { getDatabase , set , ref } from "firebase/database";
+import { getDatabase ,ref , set , get, child } from "firebase/database";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBiWEX-ygigO9Kj04kWtjASKLJ3RX20uuM",
@@ -107,7 +107,7 @@ const database = getDatabase(firebase);
 
 export default {
 
-    emits: ['change-key','hide-toast'],
+    emits: ['change-key'],
 
     data() {
         return {
@@ -155,7 +155,7 @@ export default {
 
     computed: {
 
-        getEmployeeName() {
+        employeeName() {
             if(this.selectedEmployee) {
                 return this.selectedEmployee.name;
             } else {
@@ -163,7 +163,7 @@ export default {
             }
         },
 
-        getEmployeeJob() {
+        employeeJob() {
             if(this.selectedEmployee) {
                 return this.selectedEmployee.job;
             } else {
@@ -189,73 +189,73 @@ export default {
     }, 
 
     mounted() {
+
         //gets all employees
-        fetch('https://vue-kanban-5ad84-default-rtdb.europe-west1.firebasedatabase.app/employees.json',{
-        method: 'GET',
-        })
-        .then((response) => {
-            if(response.ok) {
-                return response.json();
+        get(child(ref(database), 'employees')).then((snapshot) => {
+            if (snapshot.exists()) {
+                for (const id in snapshot.val()) {
+                    this.employees.push({
+                        id: id,
+                        name: snapshot.val()[id].name,
+                        job: snapshot.val()[id].job,
+                        isProjectManager: snapshot.val()[id].isProjectManager,
+                        isTeamLeader: snapshot.val()[id].isTeamLeader,
+                        isTeamMember: snapshot.val()[id].isTeamMember,
+                    });
+                }
+            } else {
+                console.log("No employees data available");
             }
-        })
-        .then((data) => {
-            for (const id in data) {
-                this.employees.push({
-                    id: id,
-                    name: data[id].name,
-                    job: data[id].job,
-                    isProjectManager: data[id].isProjectManager,
-                    isTeamLeader: data[id].isTeamLeader,
-                    isTeamMember: data[id].isTeamMember
-                });
-            }
+        }).catch((error) => {
+            console.error(error);
         });
+
         //gets all teams
-        fetch('https://vue-kanban-5ad84-default-rtdb.europe-west1.firebasedatabase.app/teams.json')
-        .then((response) => {
-            if(response.ok) {
-                return response.json();
+        get(child(ref(database), 'teams')).then((snapshot) => {
+            if (snapshot.exists()) {
+                for (const id in snapshot.val()) {
+                    this.teams.push({
+                        id: id,
+                        name: snapshot.val()[id].teamName,
+                        members: snapshot.val()[id].members
+                    });
+                }
+            } else {
+                console.log("No teams data available");
             }
-        })
-        .then((data) => {
-            for(const id in data) {
-                this.teams.push({
-                    id: id,
-                    name: data[id].teamName,
-                    members: data[id].members
-                });
-            }
+        }).catch((error) => {
+            console.error(error);
         });
 
         //gets all projects
-        fetch('https://vue-kanban-5ad84-default-rtdb.europe-west1.firebasedatabase.app/projects.json')
-        .then((respone) => {
-            if(respone.ok) {
-                return respone.json();
+        get(child(ref(database), 'projects')).then((snapshot) => {
+            if (snapshot.exists()) {
+                for (const id in snapshot.val()) {
+                    this.projects.push({
+                        id: id,
+                        name: data[id].name,
+                        startDate: data[id].startDate,
+                        endDate: data[id].endDate,
+                        team: data[id].team,
+                        projectManager: data[id].projectManager
+                    });
+                }
+            } else {
+                console.log("No projects data available");
             }
-        })
-        .then((data) => {
-            for(const id in data) {
-                this.projects.push({
-                    id: id,
-                    name: data[id].name,
-                    startDate: data[id].startDate,
-                    endDate: data[id].endDate,
-                    team: data[id].team,
-                    projectManager: data[id].projectManager
-                });
-            }
+        }).catch((error) => {
+            console.error(error);
         });
     },
 
     methods: {
 
-        openModal() {
-            $('#modal').modal('show');
+        openDeleteEmployeeModal() {
+            $('#deleteEmployeeModal').modal('show');
         },
 
-        closeModal() {
-            $('#modal').modal('hide');
+        closeDeleteEmployeeModal() {
+            $('#deleteEmployeeModal').modal('hide');
         },
 
         closeServerResponseModal() {
@@ -266,7 +266,7 @@ export default {
  
         deleteEmployee() {
             set(ref(database, 'employees/' + this.selectedEmployee.id),null)
-            $('#modal').modal('hide');
+            $('#deleteEmployeeModal').modal('hide');
             $('#serverResponseModal').modal('show');
         }
     },

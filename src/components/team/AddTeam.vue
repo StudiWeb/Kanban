@@ -25,11 +25,8 @@
                     <th>Job position</th>
                 </thead>
                 <tbody>
-                    <tr v-for="m in getTeamMembers">
-                        <td>
-                            {{m.name}} 
-                            <span v-if="m.isSelectedAsTeamLeader" class="font-weight-bold"> (TL)</span> 
-                        </td>
+                    <tr v-for="m in teamMembers">
+                        <td>{{m.name}} </td>
                         <td>{{m.job}}</td>
                     </tr>
                 </tbody>
@@ -77,7 +74,7 @@
 <script>
 
 import { initializeApp } from "firebase/app";
-import { getDatabase , update , ref } from "firebase/database";
+import { getDatabase , update ,push, get,child, ref } from "firebase/database";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBiWEX-ygigO9Kj04kWtjASKLJ3RX20uuM",
@@ -104,7 +101,6 @@ export default {
     data() {
         return{
             componentName: 'AddTeam',
-            teamLeader: 'empty',
             teamName: '',
             teamMembers: [],
             employees: [],
@@ -114,61 +110,52 @@ export default {
         };
     },
 
-    computed: {
-        getTeamMembers() {
-            if(this.teamMembers !== null) {
-                return this.teamMembers;
-            }
-        }
-    },
-
     mounted() {
+
         //gets all employees
-        fetch('https://vue-kanban-5ad84-default-rtdb.europe-west1.firebasedatabase.app/employees.json')
-        .then((response) => {
-            if(response.ok) {
-                return response.json();
+        get(child(ref(database), 'employees')).then((snapshot) => {
+            if (snapshot.exists()) {
+                for (const id in snapshot.val()) {
+                    this.employees.push({
+                        id: id,
+                        name: snapshot.val()[id].name,
+                        job: snapshot.val()[id].job,
+                        isProjectManager: snapshot.val()[id].isProjectManager,
+                        isTeamLeader: snapshot.val()[id].isTeamLeader,
+                    });
+                }
+
+                this.numberOfEmployees = this.employees.length;
+            } else {
+                console.log("No employees data available");
             }
-        }) 
-        .then((data) => {
-            for(const id in data) {
-                this.employees.push({
-                    id: id,
-                    name: data[id].name,
-                    job: data[id].job,
-                    isProjectManager: data[id].isProjectManager,
-                    isTeamLeader: data[id].isTeamLeader,
-                });
-            }
+        }).catch((error) => {
+            console.error(error);
         });
 
         //gets all team names that are already in use
-        fetch('https://vue-kanban-5ad84-default-rtdb.europe-west1.firebasedatabase.app/teams.json')
-        .then((response) => {
-            if(response.ok) {
-                return response.json();
+        get(child(ref(database), 'teams')).then((snapshot) => {
+            if (snapshot.exists()) {
+                for (const id in snapshot.val()) {
+                    this.teamNames.push(snapshot.val()[id].name);
+                }
+            } else {
+                console.log("No teams data available");
             }
-        }).
-        then((data) => {
-            for(const id in data) {
-                this.teamNames.push(data[id].name);
-            }
+        }).catch((error) => {
+            console.error(error);
         });
     },
 
     methods: {
-        openModal(name,members,teamLeaderId) {
+        openModal(name,members) {
 
-            if(name === '' && teamLeaderId === 'empty') {
-                this.validationAddTeamModalMesseage = 'Your teams needs a name and a team leader.';
+            if(name === '') {
+                this.validationAddTeamModalMesseage = 'Your teams needs a name.';
                 $('#validationAddTeamModal').modal('show');
             }
             else if(name === '') {
                 this.validationAddTeamModalMesseage = 'Please enter a team name.';
-                $('#validationAddTeamModal').modal('show');
-            }
-            else if(teamLeaderId === 'empty') {
-                this.validationAddTeamModalMesseage = 'Please select a team leader.';
                 $('#validationAddTeamModal').modal('show');
             }
             else if(this.teamNames.find((teamName) => teamName === name)) {
@@ -178,6 +165,10 @@ export default {
             else {
                 this.teamName = name;
                 this.teamMembers = members;
+                this.teamMembers.forEach((m) => {
+                    m.isSelectedAsProjectManager = false;
+                    m.isSelectedAsTeamLeader = false;
+                })
                 $('#addTeamModal').modal('show');
             }
         },
@@ -201,46 +192,22 @@ export default {
 
         addTeam() {
 
-            this.employees.forEach((e) => {
-                this.teamMembers.forEach((m) => {
-                    if(e.id === m.id) {
-                        //updates isTeamMember property to true for all employees who are members of this team
-                        update(ref(database,'employees/' + e.id),{
-                            isTeamMember: true
-                        })
-                    }
-                    if(e.id === m.id && m.isSelectedAsTeamLeader === true) {
-                        //updates isSelectedAsTeamLeader property to true for an employee who is a team leader of this team
-                        update(ref(database,'employees/' + e.id),{
-                            isSelectedAsTeamLeader: true
-                        })
-                    }
-                });
-            });            
-
-            //sets isTeamMember property to true for all teamMembers in teams
-            this.teamMembers.forEach((member) => member.isTeamMember = true);
-            //puts a new team into database
-            fetch('https://vue-kanban-5ad84-default-rtdb.europe-west1.firebasedatabase.app/teams.json',{
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    name: this.teamName,
-                    members: this.teamMembers
-                }),
+            push(ref(database, 'teams/'), {
+                name: this.teamName,
+                members: this.teamMembers
+            })
+            .then(() => {
+                // Data saved successfully!
+            })
+            .catch((error) => {
+                // The write failed...
+                console.log(error);
             });
 
             $('#addTeamModal').modal('hide');
             $('#serverResponseModal').modal('show');
             
         },
-
-        closeServerResponseModal() {
-            $('#serverResponseModal').modal('hide');
-            this.componentKey += 1;
-        }
     }
 
 }

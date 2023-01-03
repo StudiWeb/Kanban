@@ -5,7 +5,7 @@
             </div>
         <div class="card col-xl-6 px-0">
             <div class="card-body">
-                <form @submit.prevent="openModal">
+                <div>
                     <div class="form-group">
                         <label for="name">Name</label>
                         <input v-model="name" type="text" class="form-control" id="name">
@@ -13,7 +13,7 @@
                     </div>
                     <div class="form-group">
                         <label for="job-position">Job position</label>
-                        <input v-model="job" type="text" class="form-control" id="job-position">
+                        <input v-model="job" type="text" class="form-control" id="jobPosition">
                         <div class="invalid-feedback">This field cannot be empty!</div>
                     </div>
                     <div class="form-check">
@@ -25,13 +25,13 @@
                         <label class="form-check-label" for="team-leader">Team leader</label>
                     </div>
                     <div class="form-check px-0 my-2">
-                        <button data-target="#modal" class="btn btn-success" type="submit">Add employee</button>
+                        <button @click="openAddEmployeeModal" class="btn btn-success" type="submit">Add employee</button>
                     </div>
-                </form>
+                </div>
             </div>
         </div>
-        <teleport to="body">
-        <base-modal>
+    <teleport to="body">
+        <base-modal id="addEmployeeModal">
             <template #header>
                 Adding new employee
             </template>
@@ -46,7 +46,7 @@
                         Are you sure do you want to add this employee?
                         <div>
                             <button @click="createEmployee" class="btn btn-success mr-2">Yes</button>
-                            <button @click="closeModal" class="btn btn-primary">No</button>
+                            <button @click="closeAddEmployeeModal" class="btn btn-primary">No</button>
                         </div>
                     </div>
                 </template>
@@ -54,7 +54,7 @@
     </teleport>
 
     <teleport to="body">
-        <base-modal id="serverResponseModal" data-backdrop="static">
+        <base-modal id="serverResponseModal">
             <template #header>Server response</template>
             <template #body>You have just added a new employee to app successfully!</template>
             <template #footer>
@@ -69,6 +69,22 @@
 
 <script>
 
+import { initializeApp } from "firebase/app";
+import { getDatabase , push , ref } from "firebase/database";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyBiWEX-ygigO9Kj04kWtjASKLJ3RX20uuM",
+    authDomain: "vue-kanban-5ad84.firebaseapp.com",
+    databaseURL: "https://vue-kanban-5ad84-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "vue-kanban-5ad84",
+    storageBucket: "vue-kanban-5ad84.appspot.com",
+    messagingSenderId: "538900623860",
+    appId: "1:538900623860:web:330924a5a67488f22109a1"
+};
+
+const firebase = initializeApp(firebaseConfig);
+const database = getDatabase(firebase);
+
 export default {
 
     emits: ['change-key'],
@@ -79,7 +95,6 @@ export default {
             job: '',
             isProjectManager: false,
             isTeamLeader: false,
-            hasFirebaseErrorOccurred: false,
         }
     },
 
@@ -90,79 +105,69 @@ export default {
                 $('#name').addClass('is-valid');
             } else {
                 $('#name').removeClass('is-valid');
+                $('#name').addClass('is-invalid');
             }
         },
 
         job(value) {
             if(value !== '') {
-                $('#job-position').removeClass('is-invalid');
-                $('#job-position').addClass('is-valid');
+                $('#jobPosition').removeClass('is-invalid');
+                $('#jobPosition').addClass('is-valid');
             } else {
-                $('#job-position').removeClass('is-valid');
+                $('#jobPosition').removeClass('is-valid');
+                $('#jobPosition').addClass('is-invalid');
             }
         },
-
-        hasFirebaseErrorOccurred(value) {
-            if(value) {
-                $('#toast').toast('show');
-            } else {
-                $('#toast').toast('hide');
-            }
-        }
     },
 
     methods: {
 
-        openModal() {
+        openAddEmployeeModal() {
             if(this.name === '' && this.job === '') {
                 $('#name').addClass('is-invalid');
-                $('#job-position').addClass('is-invalid');
-                $('#modal').modal('hide');
+                $('#jobPosition').addClass('is-invalid');
+                $('#addEmployeeModal').modal('hide');
             } else if(this.name === '') {
                 $('#name').addClass('is-invalid');
-                $('#modal').modal('hide');
+                $('#addEmployeeModal').modal('hide');
             } else if(this.job === '') {
-                $('#job-position').addClass('is-invalid');
-                $('#modal').modal('hide');
+                $('#jobPosition').addClass('is-invalid');
+                $('#addEmployeeModal').modal('hide');
             } else {
-                $('#modal').modal('show');
+                $('#addEmployeeModal').modal('show');
             }
         },
 
         createEmployee() {
 
-            fetch('https://vue-kanban-5ad84-default-rtdb.europe-west1.firebasedatabase.app/employees.json',{
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    name : this.name.trim(),
-                    job: this.job.trim(),
-                    isProjectManager: this.isProjectManager,
-                    isTeamLeader: this.isTeamLeader,
-                })
+            push(ref(database, 'employees/'), {
+                name : this.name.trim(),
+                job: this.job.trim(),
+                isProjectManager: this.isProjectManager,
+                isTeamLeader: this.isTeamLeader,
+                isTeamMember: false
             })
-            .then((response) => {
-                this.name = '';
-                this.job = '';
-                this.isProjectManager = null;
-                this.isTeamLeader = null;
+            .then(() => {
+                // Data saved successfully!
+            })
+            .catch((error) => {
+                // The write failed...
+                console.log(error);
             });
 
-            $('#modal').modal('hide');
+            $('#addEmployeeModal').modal('hide');
             $('#serverResponseModal').modal('show');
+            
         },
 
-        closeModal() {
-            $('#modal').modal('hide');
+        closeAddEmployeeModal() {
+            $('#addEmployeeModal').modal('hide');
         },
 
         closeServerResponseModal() {
             $('#serverResponseModal').modal('hide');
             this.$emit('change-key');
         }
-
     }
 }
 
