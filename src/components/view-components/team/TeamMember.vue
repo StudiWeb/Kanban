@@ -1,5 +1,5 @@
 <template>
-    <tr @click="selectEmployee">
+    <tr @click="selectEmployee" :class="class">
         <td>{{name}}</td>
         <td>{{job}}</td>
     </tr>

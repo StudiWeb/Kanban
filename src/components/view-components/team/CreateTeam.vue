@@ -42,7 +42,7 @@
                         :id="e.id"
                         :name="e.name"
                         :job="e.job"
-                        :class="{selected : e.isSelected}">
+                        :class="{selectedToMove : e.isSelected}">
                     </team-member>
                 </template>
             </the-employees>
@@ -71,7 +71,7 @@
                         :id="m.id"
                         :name="m.name"
                         :job="m.job"
-                        :class="{selected : m.isSelected}">
+                        :class="{selectedToDelete : m.isSelected}">
                     </team-member>
                 </template>
             </the-employees>
@@ -104,6 +104,9 @@ import TheEmployees from './TheEmployees.vue';
 import TeamMember from './TeamMember.vue';
 
 export default {
+
+    emits: ['change-team'],
+
     components: {
         TheEmployees,
         TeamMember,
@@ -453,6 +456,7 @@ export default {
             });
             
             this.$refs.moveEmployeeToTeamButton.disabled = true;
+            this.$emit('change-team',this.teamMembers);
         },
 
         //moves team member to employees
@@ -469,6 +473,7 @@ export default {
             })
 
             this.$refs.moveTeamMemberToEmployeesButton.disabled = true;
+            this.$emit('change-team',this.teamMembers);
         },
 
         selectTeamLeader() {
