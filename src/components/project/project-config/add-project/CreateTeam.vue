@@ -1,37 +1,23 @@
 <template>
   <div class="row">
-    <div class="col-xl-6 pr-0">
+    <div class="col-xl-12">
       <slot name="header"></slot>
       <div class="px-0 form-group">
         <label>Team name</label>
         <input
-          v-model="enteredTeamName"
+          v-model="teamName"
           id="teamName"
           class="form-control"
           aria-describedby="invalidTeamName"
           ref="teamNameInput"
           type="text"
         />
-        <small
-          v-if="componentName === 'EditProject'"
-          class="form-text text-muted"
-          >If you want to change team name, please go to 'Manage team' and then
-          'Edit team'.</small
-        >
-        <div
-          v-if="teamNameExists"
-          id="invalidTeamName"
-          class="invalid-feedback"
-        >
-          There is already a team wtih this name. Please type different team
-          name.
-        </div>
       </div>
     </div>
   </div>
 
-  <div class="row" style="position: relative">
-    <div class="col-xl-6 pr-0">
+  <div class="row">
+    <div class="col-xl-12">
       <div class="h5 my-4">Add employees to your team</div>
       <div
         class="d-flex flex-column flex-lg-row align-items-md-start"
@@ -114,7 +100,6 @@
 
         <!-- team members -->
         <the-employees :title="teamName">
-          <template #managers> </template>
           <template #default>
             <team-member
               v-for="m in teamMembers"
@@ -128,28 +113,26 @@
             </team-member>
           </template>
         </the-employees>
-        <teleport to="body">
-          <div
-            class="toast hide bg-warning"
-            id="toast"
-            data-delay="2000"
-            style="
-              position: absolute;
-              top: 50%;
-              left: 50%;
-              margin-right: -50%;
-              transform: translate(-50%, -50%);
-            "
-          >
-            <div class="toast-header">
-              <strong class="mr-auto">Information</strong>
-            </div>
-            <div class="toast-body">
-              You cannot remove an employee from a team if he is selected as a
-              project manager or a team leader.
-            </div>
+        <div
+          class="toast hide bg-warning"
+          id="toast"
+          data-delay="2000"
+          style="
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            margin-right: -50%;
+            transform: translate(-50%, -50%);
+          "
+        >
+          <div class="toast-header">
+            <strong class="mr-auto">Information</strong>
           </div>
-        </teleport>
+          <div class="toast-body">
+            You cannot remove an employee from a team if he is selected as a
+            project manager or a team leader.
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -182,38 +165,24 @@ export default {
     TeamMember,
   },
 
-  props: ["teamName", "employees", "teamMembers"],
+  emits: ["set-teamName"],
 
-  emits: ["update-team", "show-info"],
+  props: ["employees", "teamMembers"],
 
   data() {
     return {
-      enteredTeamName: "",
-      selectedTeamId: "empty",
-      selectedTeam: null,
-      teamNames: [],
+      teamName: "",
       selectedEmployee: null,
-      selectedTeamLeaderId: "empty",
-      selectedTeamLeader: null,
       selectedTeamMember: null,
-      teams: [],
       moveEmployeeToTeamButton: null,
       moveTeamMemberToEmployeesButton: null,
-      teamNameExists: false,
       search: "",
-      canShowToast: false,
     };
   },
 
   watch: {
-    selectedTeamLeaderId(id) {
-      if (id === "empty") {
-        $("#teamLeader").removeClass("is-valid");
-        $("#teamLeader").addClass("is-invalid");
-      } else {
-        $("#teamLeader").removeClass("is-invalid");
-        $("#teamLeader").addClass("is-valid");
-      }
+    teamName(name) {
+      this.$emit("set-teamName", name);
     },
 
     search(phrase) {
@@ -264,47 +233,14 @@ export default {
                 m.name.toLowerCase().includes(phrase.toLowerCase()) ||
                 m.job.toLowerCase().includes(phrase.toLowerCase())
             );
-
-            if (this.selectedTeamLeader !== null) {
-              this.employees.push(this.selectedTeamLeader);
-              //sorts by team leader in employees
-              this.employees.sort(function (x, y) {
-                return x === y ? 0 : x.isSelectedAsTeamLeader ? -1 : 1;
-              });
-            }
           }
         });
     },
   },
 
-  computed: {
-    teamName() {
-      this.enteredTeamName = this.teamName;
-      return this.teamName;
-    },
-
-    teamLeaderName() {
-      if (this.selectedTeamLeader) {
-        return this.selectedTeamLeader.name;
-      } else {
-        return "none";
-      }
-    },
-
-    projectManagerName() {
-      if (this.projectManager) {
-        return this.projectManager.name;
-      } else {
-        return "none";
-      }
-    },
-  },
-
   mounted() {
-    this.$refs.teamNameInput.disabled = true;
     this.$refs.moveEmployeeToTeamButton.disabled = true;
     this.$refs.moveTeamMemberToEmployeesButton.disabled = true;
-    $("#toast").toast("hide");
   },
 
   methods: {
@@ -376,7 +312,6 @@ export default {
       });
 
       this.$refs.moveEmployeeToTeamButton.disabled = true;
-      this.$emit("update-team", this.teamMembers);
     },
 
     //moves team member to employees
@@ -396,7 +331,6 @@ export default {
       });
 
       this.$refs.moveTeamMemberToEmployeesButton.disabled = true;
-      this.$emit("update-team", this.teamMembers);
     },
   },
 };

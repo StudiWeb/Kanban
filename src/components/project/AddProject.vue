@@ -92,7 +92,9 @@
         </div>
 
         <div class="card col-xl-12 px-0" v-if="selectedTeamId !== 'empty'">
-          <div class="card-header h5 text-center">{{ projectName }}</div>
+          <div class="card-header h5 text-center">
+            {{ projectName === "" ? "Project name" : projectName }}
+          </div>
           <div class="card-body d-flex flex-column">
             <div class="card-title mt-2 mb-4 h5">{{ teamName }}</div>
             <table class="table table-striped">
@@ -208,9 +210,7 @@
           </select>
         </div>
         <CreateTeam
-          @change-team="changeTeam"
-          :projectManagerId="projectManagerId"
-          :teamleaderId="teamLeaderId"
+          @set-teamName="setTeamName"
           :employees="employees"
           :teamMembers="teamMembers"
         />
@@ -410,7 +410,7 @@ export default {
       } else {
         this.selectedProjectManagerId = "empty";
         this.selectedTeamLeaderId = "empty";
-        this.teamMembers = null;
+        this.teamMembers = [];
         this.$refs.projectManagerSelect.disabled = true;
         this.$refs.teamLeaderSelect.disabled = true;
         $("#team").removeClass("is-valid");
@@ -442,7 +442,15 @@ export default {
           this.$refs.teamLeaderSelect.disabled = true;
         }
       }
-      this.selectedTeamId = "empty";
+
+      if (value !== "newTeam") {
+        if (this.$refs.teamNameInput) {
+          this.$refs.projectManagerSelect.disabled = true;
+        }
+      }
+
+      this.selectedProjectManagerId = "empty";
+      this.selectedTeamLeaderId = "empty";
       this.teamMembers = [];
     },
 
@@ -557,71 +565,14 @@ export default {
   },
 
   methods: {
-    changeTeam(team) {
-      this.teamMembers = team;
+    setTeamName(name) {
+      this.teamName = name;
     },
 
     selectProjectManager() {
       const projectManagerId = this.selectedProjectManagerId;
-      const projectManager = this.projectManagers.find(
-        (pm) => pm.id === projectManagerId
-      );
-      this.selectedProjectManager = projectManager;
 
       if (projectManagerId !== "empty") {
-        this.teamMembers.forEach((m) => (m.isSelectedAsProjectManager = false));
-
-        if (this.teamMembers.find((m) => m.id === projectManagerId)) {
-          this.teamMembers.find(
-            (m) => m.id === projectManagerId
-          ).isSelectedAsProjectManager = true;
-        } else {
-          projectManager.isSelectedAsProjectManager = true;
-          this.teamMembers.push(projectManager);
-        }
-      }
-
-      this.selectedProjectManager.isSelectedAsProjectManager = true;
-      this.teamMembers.forEach((t) => {
-        while (this.employees.find((e) => e.id === t.id)) {
-          const index = this.employees.findIndex((e) => e.id === t.id);
-          this.employees.splice(index, 1);
-        }
-      });
-    },
-
-    selectTeamLeader() {
-      const teamLeaderId = this.selectedTeamLeaderId;
-      const teamLeader = this.teamLeaders.find((tl) => tl.id === teamLeaderId);
-      this.selectedTeamLeader = teamLeader;
-
-      if (teamLeaderId !== "empty") {
-        this.teamMembers.forEach((m) => (m.isSelectedAsTeamLeader = false));
-
-        if (this.teamMembers.find((m) => m.id === teamLeaderId)) {
-          this.teamMembers.find(
-            (m) => m.id === teamLeaderId
-          ).isSelectedAsTeamLeader = true;
-        } else {
-          teamLeader.isSelectedAsTeamLeader = true;
-          this.teamMembers.push(teamLeader);
-        }
-      }
-      this.selectedTeamLeader.isSelectedAsTeamLeader = true;
-      this.teamMembers.forEach((t) => {
-        while (this.employees.find((e) => e.id === t.id)) {
-          const index = this.employees.findIndex((e) => e.id === t.id);
-          this.employees.splice(index, 1);
-        }
-      });
-    },
-
-    selectSupervisor(supervisor) {
-      /**
-       * project manager
-       */
-      if (supervisor === "projectManager") {
-        const projectManagerId = this.projectManagerId;
         const projectManager = this.projectManagers.find(
           (pm) => pm.id === projectManagerId
         );
@@ -641,14 +592,23 @@ export default {
             this.teamMembers.push(projectManager);
           }
         }
-        this.selectedProjectManager.isSelectedAsProjectManager = true;
-      }
 
-      /**
-       * team leader
-       */
-      if (supervisor === "teamLeader") {
-        const teamLeaderId = this.teamLeaderId;
+        this.selectedProjectManager.isSelectedAsProjectManager = true;
+        this.teamMembers.forEach((t) => {
+          while (this.employees.find((e) => e.id === t.id)) {
+            const index = this.employees.findIndex((e) => e.id === t.id);
+            this.employees.splice(index, 1);
+          }
+        });
+      } else {
+        this.teamMembers.forEach((m) => (m.isSelectedAsProjectManager = false));
+      }
+    },
+
+    selectTeamLeader() {
+      const teamLeaderId = this.selectedTeamLeaderId;
+
+      if (teamLeaderId !== "empty") {
         const teamLeader = this.teamLeaders.find(
           (tl) => tl.id === teamLeaderId
         );
@@ -667,7 +627,163 @@ export default {
           }
         }
         this.selectedTeamLeader.isSelectedAsTeamLeader = true;
+        this.teamMembers.forEach((t) => {
+          while (this.employees.find((e) => e.id === t.id)) {
+            const index = this.employees.findIndex((e) => e.id === t.id);
+            this.employees.splice(index, 1);
+          }
+        });
+      } else {
+        this.teamMembers.forEach((m) => (m.isSelectedAsTeamLeader = false));
       }
+    },
+
+    selectSupervisor(supervisor) {
+      get(child(ref(database), "teams/" + this.selectedTeamId))
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            const baseTeam = snapshot.val().members;
+
+            /**
+             * project manager
+             */
+            if (supervisor === "projectManager") {
+              const projectManagerId = this.selectedProjectManagerId;
+
+              if (projectManagerId !== "empty") {
+                const projectManager = this.projectManagers.find(
+                  (pm) => pm.id === projectManagerId
+                );
+                this.selectedProjectManager = projectManager;
+
+                if (projectManagerId !== "empty") {
+                  this.teamMembers.forEach(
+                    (m) => (m.isSelectedAsProjectManager = false)
+                  );
+
+                  if (this.teamMembers.find((m) => m.id === projectManagerId)) {
+                    this.teamMembers.find(
+                      (m) => m.id === projectManagerId
+                    ).isSelectedAsProjectManager = true;
+                  } else {
+                    projectManager.isSelectedAsProjectManager = true;
+                    this.teamMembers.push(projectManager);
+                  }
+
+                  this.teamMembers.forEach((m) => {
+                    if (!baseTeam.find((x) => x.id === m.id)) {
+                      if (
+                        (m.isSelectedAsProjectManager === false ||
+                          typeof m.isSelectedAsProjectManager ===
+                            "undefined") &&
+                        (m.isSelectedAsTeamLeader === false ||
+                          typeof m.isSelectedAsTeamLeader === "undefined")
+                      ) {
+                        const index = this.teamMembers.findIndex(
+                          (x) => x.id === m.id
+                        );
+                        this.teamMembers.splice(index, 1);
+                      }
+                    }
+                  });
+                }
+
+                this.selectedProjectManager.isSelectedAsProjectManager = true;
+              } else {
+                this.teamMembers.forEach(
+                  (m) => (m.isSelectedAsProjectManager = false)
+                );
+
+                this.teamMembers.forEach((m) => {
+                  if (!baseTeam.find((x) => x.id === m.id)) {
+                    if (
+                      (m.isSelectedAsProjectManager === false ||
+                        typeof m.isSelectedAsProjectManager === "undefined") &&
+                      (m.isSelectedAsTeamLeader === false ||
+                        typeof m.isSelectedAsTeamLeader === "undefined")
+                    ) {
+                      const index = this.teamMembers.findIndex(
+                        (x) => x.id === m.id
+                      );
+                      this.teamMembers.splice(index, 1);
+                    }
+                  }
+                });
+              }
+            }
+
+            /**
+             * team leader
+             */
+            if (supervisor === "teamLeader") {
+              const teamLeaderId = this.selectedTeamLeaderId;
+
+              if (teamLeaderId !== "empty") {
+                const teamLeader = this.teamLeaders.find(
+                  (tl) => tl.id === teamLeaderId
+                );
+                this.selectedTeamLeader = teamLeader;
+
+                if (teamLeaderId !== "empty") {
+                  this.teamMembers.forEach(
+                    (m) => (m.isSelectedAsTeamLeader = false)
+                  );
+
+                  if (this.teamMembers.find((m) => m.id === teamLeaderId)) {
+                    this.teamMembers.find(
+                      (m) => m.id === teamLeaderId
+                    ).isSelectedAsTeamLeader = true;
+                  } else {
+                    teamLeader.isSelectedAsTeamLeader = true;
+                    this.teamMembers.push(teamLeader);
+                  }
+
+                  this.teamMembers.forEach((m) => {
+                    if (!baseTeam.find((x) => x.id === m.id)) {
+                      if (
+                        (m.isSelectedAsProjectManager === false ||
+                          typeof m.isSelectedAsProjectManager ===
+                            "undefined") &&
+                        (m.isSelectedAsTeamLeader === false ||
+                          typeof m.isSelectedAsTeamLeader === "undefined")
+                      ) {
+                        const index = this.teamMembers.findIndex(
+                          (x) => x.id === m.id
+                        );
+                        this.teamMembers.splice(index, 1);
+                      }
+                    }
+                  });
+                }
+                this.selectedTeamLeader.isSelectedAsTeamLeader = true;
+              } else {
+                this.teamMembers.forEach(
+                  (m) => (m.isSelectedAsTeamLeader = false)
+                );
+                this.teamMembers.forEach((m) => {
+                  if (!baseTeam.find((x) => x.id === m.id)) {
+                    if (
+                      (m.isSelectedAsProjectManager === false ||
+                        typeof m.isSelectedAsProjectManager === "undefined") &&
+                      (m.isSelectedAsTeamLeader === false ||
+                        typeof m.isSelectedAsTeamLeader === "undefined")
+                    ) {
+                      const index = this.teamMembers.findIndex(
+                        (x) => x.id === m.id
+                      );
+                      this.teamMembers.splice(index, 1);
+                    }
+                  }
+                });
+              }
+            }
+          } else {
+            console.log("No data available");
+          }
+        })
+        .catch((error) => {
+          console.error(error);
+        });
     },
 
     openModal() {
@@ -724,6 +840,43 @@ export default {
     },
 
     createProject() {
+      //does not add a selected project manager and a team leader to an existing team
+      if (this.myTeam === "teamList") {
+        const projectManagerIndex = this.teamMembers.findIndex(
+          (m) => m.isSelectedAsProjectManager === true
+        );
+        this.teamMembers.splice(projectManagerIndex, 1);
+
+        const teamLeaderIndex = this.teamMembers.findIndex(
+          (m) => m.isSelectedAsTeamLeader === true
+        );
+        this.teamMembers.splice(teamLeaderIndex, 1);
+      }
+
+      //removes isSelectedAsProjectManager and isSelectedAsTeamLeader properties
+      delete this.selectedProjectManager.isSelectedAsProjectManager;
+      delete this.selectedTeamLeader.isSelectedAsTeamLeader;
+      this.teamMembers.forEach((m) => {
+        delete m.isSelectedAsProjectManager;
+        delete m.isSelectedAsTeamLeader;
+      });
+
+      //ads a new created team to teams
+      if (this.myTeam === "newTeam") {
+        push(ref(database, "teams/"), {
+          name: this.teamName.trim(),
+          members: this.teamMembers,
+        })
+          .then(() => {
+            // Data saved successfully!
+          })
+          .catch((error) => {
+            // The write failed...
+            console.log(error);
+          });
+      }
+
+      //prepeares a team to add to a project
       this.selectedTeam = {
         name: this.teamName,
         members: this.teamMembers,
