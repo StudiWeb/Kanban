@@ -12,20 +12,6 @@
           ref="teamNameInput"
           type="text"
         />
-        <small
-          v-if="componentName === 'EditProject'"
-          class="form-text text-muted"
-          >If you want to change team name, please go to 'Manage team' and then
-          'Edit team'.</small
-        >
-        <div
-          v-if="teamNameExists"
-          id="invalidTeamName"
-          class="invalid-feedback"
-        >
-          There is already a team wtih this name. Please type different team
-          name.
-        </div>
       </div>
     </div>
   </div>
@@ -183,33 +169,14 @@ export default {
   data() {
     return {
       enteredTeamName: "",
-      selectedTeamId: "empty",
-      selectedTeam: null,
-      teamNames: [],
-      selectedEmployee: null,
-      selectedTeamLeaderId: "empty",
-      selectedTeamLeader: null,
-      selectedTeamMember: null,
+      employee: null,
+      teamMember: null,
       teams: [],
-      moveEmployeeToTeamButton: null,
-      moveTeamMemberToEmployeesButton: null,
-      teamNameExists: false,
       search: "",
-      canShowToast: false,
     };
   },
 
   watch: {
-    selectedTeamLeaderId(id) {
-      if (id === "empty") {
-        $("#teamLeader").removeClass("is-valid");
-        $("#teamLeader").addClass("is-invalid");
-      } else {
-        $("#teamLeader").removeClass("is-invalid");
-        $("#teamLeader").addClass("is-valid");
-      }
-    },
-
     search(phrase) {
       //gets employees
       fetch(
@@ -231,8 +198,6 @@ export default {
               job: data[id].job,
               isProjectManager: data[id].isProjectManager,
               isTeamLeader: data[id].isTeamLeader,
-              isSelected: false,
-              isSelectedAsTeamLeader: false,
             });
 
             //sorts employees by name
@@ -258,14 +223,6 @@ export default {
                 m.name.toLowerCase().includes(phrase.toLowerCase()) ||
                 m.job.toLowerCase().includes(phrase.toLowerCase())
             );
-
-            if (this.selectedTeamLeader !== null) {
-              this.employees.push(this.selectedTeamLeader);
-              //sorts by team leader in employees
-              this.employees.sort(function (x, y) {
-                return x === y ? 0 : x.isSelectedAsTeamLeader ? -1 : 1;
-              });
-            }
           }
         });
     },
@@ -275,22 +232,6 @@ export default {
     teamName() {
       this.enteredTeamName = this.teamName;
       return this.teamName;
-    },
-
-    teamLeaderName() {
-      if (this.selectedTeamLeader) {
-        return this.selectedTeamLeader.name;
-      } else {
-        return "none";
-      }
-    },
-
-    projectManagerName() {
-      if (this.projectManager) {
-        return this.projectManager.name;
-      } else {
-        return "none";
-      }
     },
 
     otherEmployees() {
@@ -322,12 +263,12 @@ export default {
       this.$refs.moveEmployeeToTeamButton.disabled = false;
       this.$refs.moveTeamMemberToEmployeesButton.disabled = true;
 
-      this.selectedEmployee = this.employees.find((m) => m.id === id);
-      this.selectedEmployee.isSelected = true;
+      this.employee = this.employees.find((m) => m.id === id);
+      this.employee.isSelected = true;
 
       if (employee) {
-        if (this.selectedEmployee.id === employee.id) {
-          this.selectedEmployee.isSelected = !this.selectedEmployee.isSelected;
+        if (this.employee.id === employee.id) {
+          this.employee.isSelected = !this.employee.isSelected;
           this.$refs.moveEmployeeToTeamButton.disabled = true;
         }
       }
@@ -343,21 +284,20 @@ export default {
       this.$refs.moveEmployeeToTeamButton.disabled = true;
       this.$refs.moveTeamMemberToEmployeesButton.disabled = false;
 
-      this.selectedTeamMember = this.teamMembers.find((m) => m.id === id);
+      this.teamMember = this.teamMembers.find((m) => m.id === id);
       if (
-        this.selectedTeamMember.isSelectedAsProjectManager === true ||
-        this.selectedTeamMember.isSelectedAsTeamLeader === true
+        this.teamMember.isSelectedAsProjectManager === true ||
+        this.teamMember.isSelectedAsTeamLeader === true
       ) {
         $("#toast").toast("show");
         this.$refs.moveTeamMemberToEmployeesButton.disabled = true;
       } else {
-        this.selectedTeamMember.isSelected = true;
+        this.teamMember.isSelected = true;
       }
 
       if (employee) {
-        if (this.selectedTeamMember.id === employee.id) {
-          this.selectedTeamMember.isSelected =
-            !this.selectedTeamMember.isSelected;
+        if (this.teamMember.id === employee.id) {
+          this.teamMember.isSelected = !this.teamMember.isSelected;
           this.$refs.moveTeamMemberToEmployeesButton.disabled = true;
         }
       }
@@ -365,13 +305,10 @@ export default {
 
     //moves employee to team
     moveEmployeeToTeam() {
-      this.selectedEmployee.isTeamMember = true;
-      this.teamMembers.push(this.selectedEmployee);
-      const index = this.employees.findIndex(
-        (e) => e.id === this.selectedEmployee.id
-      );
+      this.teamMembers.push(this.employee);
+      const index = this.employees.findIndex((e) => e.id === this.employee.id);
       this.employees.splice(index, 1);
-      this.selectedEmployee = null;
+      this.employee = null;
 
       this.teamMembers.forEach((m) => {
         if (m.isSelected === true) {
@@ -385,13 +322,12 @@ export default {
 
     //moves team member to employees
     moveTeamMemberToEmployees() {
-      this.selectedTeamMember.isTeamMember = false;
-      this.employees.push(this.selectedTeamMember);
+      this.employees.push(this.teamMember);
       const index = this.teamMembers.findIndex(
-        (e) => e.id === this.selectedTeamMember.id
+        (e) => e.id === this.teamMember.id
       );
       this.teamMembers.splice(index, 1);
-      this.selectedTeamMember = null;
+      this.teamMember = null;
 
       this.employees.forEach((m) => {
         if (m.isSelected === true) {

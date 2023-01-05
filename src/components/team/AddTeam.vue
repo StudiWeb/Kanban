@@ -172,6 +172,9 @@ export default {
       } else {
         this.teamName = name;
         this.teamMembers = members;
+        this.teamMembers.forEach((m) => {
+          delete m.isSelected;
+        });
         $("#addTeamModal").modal("show");
       }
     },

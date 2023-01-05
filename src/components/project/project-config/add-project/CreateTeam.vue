@@ -297,7 +297,6 @@ export default {
 
     //moves employee to team
     moveEmployeeToTeam() {
-      this.selectedEmployee.isTeamMember = true;
       this.teamMembers.push(this.selectedEmployee);
       const index = this.employees.findIndex(
         (e) => e.id === this.selectedEmployee.id
@@ -316,7 +315,6 @@ export default {
 
     //moves team member to employees
     moveTeamMemberToEmployees() {
-      this.selectedTeamMember.isTeamMember = false;
       this.employees.push(this.selectedTeamMember);
       const index = this.teamMembers.findIndex(
         (e) => e.id === this.selectedTeamMember.id

@@ -202,7 +202,7 @@ export default {
 
     mounted() {
 
-        //gets all projets
+        //gets all projects
         get(child(ref(database), `projects`))
         .then((data) => {
             if (data.exists()) {

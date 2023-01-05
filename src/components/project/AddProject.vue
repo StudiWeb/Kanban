@@ -840,26 +840,9 @@ export default {
     },
 
     createProject() {
-      //does not add a selected project manager and a team leader to an existing team
-      if (this.myTeam === "teamList") {
-        const projectManagerIndex = this.teamMembers.findIndex(
-          (m) => m.isSelectedAsProjectManager === true
-        );
-        this.teamMembers.splice(projectManagerIndex, 1);
-
-        const teamLeaderIndex = this.teamMembers.findIndex(
-          (m) => m.isSelectedAsTeamLeader === true
-        );
-        this.teamMembers.splice(teamLeaderIndex, 1);
-      }
-
       //removes isSelectedAsProjectManager and isSelectedAsTeamLeader properties
       delete this.selectedProjectManager.isSelectedAsProjectManager;
       delete this.selectedTeamLeader.isSelectedAsTeamLeader;
-      this.teamMembers.forEach((m) => {
-        delete m.isSelectedAsProjectManager;
-        delete m.isSelectedAsTeamLeader;
-      });
 
       //ads a new created team to teams
       if (this.myTeam === "newTeam") {

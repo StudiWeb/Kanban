@@ -3,7 +3,7 @@
     <div class="col-xl-6 px-0">
       <div class="form-group">
         <label>Project name</label>
-        <input v-model="name" type="text" class="form-control" />
+        <input v-model="projectName" type="text" class="form-control" />
       </div>
       <div class="form-group">
         <label>Start date</label>
@@ -42,8 +42,6 @@
     <CreateTeam
       @update-team="updateTeam"
       :employees="employees"
-      :projectManagerId="projectManagerId"
-      :teamLeaderId="teamLeaderId"
       :teamMembers="teamMembers"
       :teamName="teamName"
     />
@@ -60,7 +58,7 @@
         <div class="row">
           <div class="col">
             <div class="font-weight-bold">Project name</div>
-            <span>{{ name }}</span>
+            <span>{{ projectName }}</span>
           </div>
         </div>
         <div class="row my-3">
@@ -69,7 +67,7 @@
             <span>{{ projectManagerName }}</span>
           </div>
           <div class="col-4">
-            <div class="font-weight-bold">Project manager</div>
+            <div class="font-weight-bold">Team leader</div>
             <span>{{ teamLeaderName }}</span>
           </div>
         </div>
@@ -202,6 +200,65 @@
 </template>
 
 <script>
+var isEqual = function (value, other) {
+  // Get the value type
+  var type = Object.prototype.toString.call(value);
+
+  // If the two objects are not the same type, return false
+  if (type !== Object.prototype.toString.call(other)) return false;
+
+  // If items are not an object or array, return false
+  if (["[object Array]", "[object Object]"].indexOf(type) < 0) return false;
+
+  // Compare the length of the length of the two items
+  var valueLen =
+    type === "[object Array]" ? value.length : Object.keys(value).length;
+  var otherLen =
+    type === "[object Array]" ? other.length : Object.keys(other).length;
+  if (valueLen !== otherLen) return false;
+
+  // Compare two items
+  var compare = function (item1, item2) {
+    // Get the object type
+    var itemType = Object.prototype.toString.call(item1);
+
+    // If an object or array, compare recursively
+    if (["[object Array]", "[object Object]"].indexOf(itemType) >= 0) {
+      if (!isEqual(item1, item2)) return false;
+    }
+
+    // Otherwise, do a simple comparison
+    else {
+      // If the two items are not the same type, return false
+      if (itemType !== Object.prototype.toString.call(item2)) return false;
+
+      // Else if it's a function, convert to a string and compare
+      // Otherwise, just compare
+      if (itemType === "[object Function]") {
+        if (item1.toString() !== item2.toString()) return false;
+      } else {
+        if (item1 !== item2) return false;
+      }
+    }
+  };
+
+  // Compare properties
+  if (type === "[object Array]") {
+    for (var i = 0; i < valueLen; i++) {
+      if (compare(value[i], other[i]) === false) return false;
+    }
+  } else {
+    for (var key in value) {
+      if (value.hasOwnProperty(key)) {
+        if (compare(value[key], other[key]) === false) return false;
+      }
+    }
+  }
+
+  // If nothing failed, return true
+  return true;
+};
+
 import { initializeApp } from "firebase/app";
 import { getDatabase, ref, update, get, child } from "firebase/database";
 
@@ -232,9 +289,8 @@ export default {
 
   data() {
     return {
-      componentName: "EditProject",
-      selectedProject: null,
-      name: "",
+      project: null,
+      projectName: "",
       startDate: "",
       endDate: "",
       projectManagerId: "empty",
@@ -243,10 +299,8 @@ export default {
       projectManagers: [],
       teamLeaders: [],
       teamLeader: null,
-      projectTeamName: "",
       teamMembers: [],
       validation: false,
-      projectTeamLeader: "",
       teamName: "",
       project: null,
       employees: [],
@@ -278,7 +332,6 @@ export default {
               job: snapshot.val()[id].job,
               isProjectManager: snapshot.val()[id].isProjectManager,
               isTeamLeader: snapshot.val()[id].isTeamLeader,
-              isTeamMember: snapshot.val()[id].isTeamMember,
             });
 
             if (snapshot.val()[id].isProjectManager) {
@@ -288,7 +341,6 @@ export default {
                 job: snapshot.val()[id].job,
                 isProjectManager: snapshot.val()[id].isProjectManager,
                 isTeamLeader: snapshot.val()[id].isTeamLeader,
-                isTeamMember: snapshot.val()[id].isTeamMember,
               });
             }
 
@@ -299,7 +351,6 @@ export default {
                 job: snapshot.val()[id].job,
                 isProjectManager: snapshot.val()[id].isProjectManager,
                 isTeamLeader: snapshot.val()[id].isTeamLeader,
-                isTeamMember: snapshot.val()[id].isTeamMember,
               });
             }
           }
@@ -314,7 +365,7 @@ export default {
     get(child(ref(database), "projects/" + this.selectedProjectId))
       .then((snapshot) => {
         if (snapshot.exists()) {
-          this.selectedProject = {
+          this.project = {
             name: snapshot.val().name,
             startDate: snapshot.val().startDate,
             endDate: snapshot.val().endDate,
@@ -324,7 +375,7 @@ export default {
             isProjectVisible: snapshot.val().isProjectVisible,
           };
 
-          this.name = snapshot.val().name;
+          this.projectName = snapshot.val().name;
           this.startDate = snapshot.val().startDate;
           this.endDate = snapshot.val().endDate;
           this.projectManager = snapshot.val().projectManager;
@@ -344,6 +395,24 @@ export default {
 
   methods: {
     updateTeam(members) {
+      members.forEach((m) => {
+        m.isSelectedAsProjectManager = false;
+        m.isSelectedAsTeamLeader = false;
+      });
+
+      members.forEach((m) => {
+        if (m.id === this.projectManagerId) {
+          m.isSelectedAsProjectManager = true;
+        }
+
+        if (m.id === this.teamLeaderId) {
+          m.isSelectedAsTeamLeader = true;
+        }
+      });
+
+      members.forEach((m) => {
+        delete m.isSelected;
+      });
       this.teamMembers = members;
     },
 
@@ -359,7 +428,7 @@ export default {
               const projectManager = this.projectManagers.find(
                 (pm) => pm.id === projectManagerId
               );
-              this.selectedProjectManager = projectManager;
+              this.projectManager = projectManager;
 
               if (projectManagerId !== "empty") {
                 this.teamMembers.forEach(
@@ -375,7 +444,7 @@ export default {
                   this.teamMembers.push(projectManager);
                 }
               }
-              this.selectedProjectManager.isSelectedAsProjectManager = true;
+              this.projectManager.isSelectedAsProjectManager = true;
             }
 
             /**
@@ -386,7 +455,7 @@ export default {
               const teamLeader = this.teamLeaders.find(
                 (tl) => tl.id === teamLeaderId
               );
-              this.selectedTeamLeader = teamLeader;
+              this.teamLeader = teamLeader;
 
               if (teamLeaderId !== "empty") {
                 this.teamMembers.forEach(
@@ -402,7 +471,7 @@ export default {
                   this.teamMembers.push(teamLeader);
                 }
               }
-              this.selectedTeamLeader.isSelectedAsTeamLeader = true;
+              this.teamLeader.isSelectedAsTeamLeader = true;
             }
           } else {
             console.log("No data available");
@@ -416,34 +485,27 @@ export default {
     openModal() {
       let validation = false;
 
-      if (this.selectedProject.name !== this.name) {
+      if (this.project.name !== this.projectName) {
         validation = true;
       }
 
-      if (this.selectedProject.startDate !== this.startDate) {
+      if (this.project.startDate !== this.startDate) {
         validation = true;
       }
 
-      if (this.selectedProject.endDate !== this.endDate) {
+      if (this.project.endDate !== this.endDate) {
         validation = true;
       }
 
-      if (this.selectedProject.projectManager.id !== this.projectManagerId) {
+      if (this.project.projectManager.id !== this.projectManagerId) {
         validation = true;
       }
 
-      const baseProjectMembers = this.selectedProject.team.members;
-      baseProjectMembers.sort(function (x, y) {
-        x.name === y.name ? 0 : x.name > y.name ? 1 : -1;
-      });
+      const baseProjectMembers = this.project.team.members;
+      baseProjectMembers.sort((a, b) => a.name.localeCompare(b.name));
+      this.teamMembers.sort((a, b) => a.name.localeCompare(b.name));
 
-      this.teamMembers.sort(function (x, y) {
-        x.name === y.name ? 0 : x.name > y.name ? 1 : -1;
-      });
-
-      if (
-        JSON.stringify(baseProjectMembers) !== JSON.stringify(this.teamMembers)
-      ) {
+      if (!isEqual(baseProjectMembers, this.teamMembers)) {
         validation = true;
       }
 

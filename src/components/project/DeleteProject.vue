@@ -148,7 +148,7 @@
             <th class="text-center">Team leader</th>
           </thead>
           <tbody>
-            <tr v-for="m in selectedProjectTeamMembers">
+            <tr v-for="m in projectMembers">
               <td>{{ m.name }}</td>
               <td>{{ m.job }}</td>
               <td class="text-center">
@@ -270,8 +270,6 @@ export default {
       projects: [],
       projectManager: null,
       teamLeader: null,
-      startDate: "",
-      endDate: "",
       canShowProjectDetails: false,
     };
   },
