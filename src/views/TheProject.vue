@@ -4,7 +4,7 @@
   </div>
 
   <section class="mt-5 d-flex justify-content-around">
-    <the-card title="To Do" type="todo">
+    <the-card title="To Do" type="todo" style="position: relative">
       <template #tasks>
         <TheTask
           v-for="t in toDoTasks"
@@ -48,6 +48,28 @@
         />
       </template>
     </the-card>
+
+    <teleport to="body">
+      <div
+        class="toast hide bg-warning"
+        id="toast"
+        data-delay="4000"
+        style="
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          -webkit-transform: translate(-50%, -50%);
+          transform: translate(-50%, -50%);
+        "
+      >
+        <div class="toast-header">
+          <strong class="mr-auto">Information</strong>
+        </div>
+        <div class="toast-body">
+          You cannot move a task that does not have an assigned employee to it.
+        </div>
+      </div>
+    </teleport>
   </section>
 
   <teleport to="body">
@@ -336,7 +358,13 @@ export default {
     },
     moveTaskToRight() {
       if (this.status === "todo") {
-        this.updateTasks(this.status, "right");
+        console.log(this.employees.find((e) => e.name === "none"));
+        if (this.employees.find((e) => e.name === "none")) {
+          $("#moveTaskModal").modal("hide");
+          $("#toast").toast("show");
+        } else {
+          this.updateTasks(this.status, "right");
+        }
       }
       if (this.status === "doing") {
         this.updateTasks(this.status, "right");
