@@ -91,12 +91,12 @@
 <script>
 import { computed } from "vue";
 
-import ProjectConfiguration from "./project-config/ProjectConfiguration.vue";
-import EditProject from "./project-config/EditProject.vue";
-import CreateTask from "./project-config/CreateTask.vue";
-import TaskLists from "./project-config/TaskLists.vue";
-import DeleteTask from "./project-config/DeleteTask.vue";
-import EditTask from "./project-config/EditTask.vue";
+import ProjectConfiguration from "./project-config/configure-project/ProjectConfiguration.vue";
+import EditProject from "./project-config/configure-project/EditProject.vue";
+import CreateTask from "./project-config/task/CreateTask.vue";
+import TaskLists from "./project-config/task/TaskLists.vue";
+import DeleteTask from "./project-config/task//DeleteTask.vue";
+import EditTask from "./project-config/task/EditTask.vue";
 
 export default {
   components: {

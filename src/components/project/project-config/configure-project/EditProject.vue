@@ -276,7 +276,7 @@ const firebaseConfig = {
 const firebase = initializeApp(firebaseConfig);
 const database = getDatabase(firebase);
 
-import CreateTeam from "./configure-project/CreateTeam.vue";
+import CreateTeam from "./CreateTeam.vue";
 
 export default {
   components: {
@@ -533,7 +533,7 @@ export default {
 
     editProject() {
       update(ref(database, "projects/" + this.selectedProjectId), {
-        name: this.name,
+        name: this.projectName,
         startDate: this.startDate,
         endDate: this.endDate,
         projectManager: this.projectManager,
