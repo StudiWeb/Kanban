@@ -6,12 +6,24 @@
   <section class="mt-5 d-flex justify-content-around">
     <the-card title="To Do" type="todo">
       <template #tasks>
-        <TheTask v-for="t in toDoTasks" :key="t.id" :task="t" type="todo" />
+        <TheTask
+          v-for="t in toDoTasks"
+          :key="t.id"
+          :taskId="t.id"
+          :projectId="projectId"
+          @open-modal="openModal"
+        />
       </template>
     </the-card>
     <the-card title="Doing" type="doing">
       <template #tasks>
-        <TheTask v-for="t in doingTasks" :key="t.id" :task="t" type="doing" />
+        <TheTask
+          v-for="t in doingTasks"
+          :key="t.id"
+          :taskId="t.id"
+          :projectId="projectId"
+          @open-modal="openModal"
+        />
       </template>
     </the-card>
     <the-card title="Testing" type="testing">
@@ -19,22 +31,87 @@
         <TheTask
           v-for="t in testingTasks"
           :key="t.id"
-          :task="t"
-          type="testing"
+          :taskId="t.id"
+          :projectId="projectId"
+          @open-modal="openModal"
         />
       </template>
     </the-card>
     <the-card title="Done" type="done">
       <template #tasks>
-        <TheTask v-for="t in doneTasks" :key="t.id" :task="t" type="done" />
+        <TheTask
+          v-for="t in doneTasks"
+          :key="t.id"
+          :taskId="t.id"
+          :projectId="projectId"
+          @open-modal="openModal"
+        />
       </template>
     </the-card>
   </section>
+
+  <teleport to="body">
+    <base-modal id="moveTaskModal">
+      <template #header>Create task</template>
+      <template #body>
+        <div class="row">
+          <div class="col-4 d-flex flex-column">
+            <span class="font-weight-bold">Task name</span>{{ name }}
+          </div>
+          <div class="col-8 d-flex flex-column">
+            <span class="font-weight-bold"
+              >{{ employees.length === 1 ? "Employee" : "Employees" }}
+            </span>
+            <p v-if="employees.find((e) => e === 'none')">none</p>
+            <p v-else class="mb-1" v-for="e in employees" :key="e.id">
+              {{ e.name === "none" ? e.name : e.name - e.job }}
+            </p>
+          </div>
+        </div>
+        <div class="row my-2">
+          <div class="col-4 d-flex flex-column">
+            <span class="font-weight-bold">Start date</span>{{ startDate }}
+          </div>
+          <div class="col-8 d-flex flex-column">
+            <span class="font-weight-bold">End date</span>{{ endDate }}
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-12 d-flex flex-column text-break">
+            <span class="font-weight-bold">Task description</span>
+            <p>{{ description }}</p>
+          </div>
+        </div>
+      </template>
+      <template #footer>
+        <div class="d-flex justify-content-center">
+          <div>
+            <button
+              @click="moveTaskToLeft"
+              id="moveTaskToLeft"
+              style="width: 60px"
+              ref="moveTaskToLeft"
+            >
+              <i class="bi bi-arrow-left"></i>
+            </button>
+            <button
+              @click="moveTaskToRight"
+              id="moveTaskToRight"
+              style="width: 60px"
+              ref="moveTaskToRight"
+            >
+              <i class="bi bi-arrow-right"></i>
+            </button>
+          </div>
+        </div>
+      </template>
+    </base-modal>
+  </teleport>
 </template>
 
 <script>
 import { initializeApp } from "firebase/app";
-import { getDatabase, ref, get, child } from "firebase/database";
+import { getDatabase, ref, get, child, update } from "firebase/database";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBiWEX-ygigO9Kj04kWtjASKLJ3RX20uuM",
@@ -61,6 +138,14 @@ export default {
 
   data() {
     return {
+      taskId: "",
+      name: "",
+      startDate: "",
+      endDate: "",
+      description: "",
+      employees: [],
+      status: "",
+      projectId: "",
       project: null,
       tasks: [],
     };
@@ -99,11 +184,11 @@ export default {
     doingTasks() {
       if (this.project) {
         const tasks = this.project.tasks;
-        let toDoTasks = [];
+        let doingTasks = [];
 
         for (const id in tasks) {
           if (tasks[id].status === "doing") {
-            toDoTasks.push({
+            doingTasks.push({
               id: id,
               name: tasks[id].name,
               startDate: tasks[id].startDate,
@@ -115,18 +200,18 @@ export default {
           }
         }
 
-        return toDoTasks;
+        return doingTasks;
       }
     },
 
     testingTasks() {
       if (this.project) {
         const tasks = this.project.tasks;
-        let toDoTasks = [];
+        let testingTasks = [];
 
         for (const id in tasks) {
           if (tasks[id].status === "testing") {
-            toDoTasks.push({
+            testingTasks.push({
               id: id,
               name: tasks[id].name,
               startDate: tasks[id].startDate,
@@ -138,18 +223,18 @@ export default {
           }
         }
 
-        return toDoTasks;
+        return testingTasks;
       }
     },
 
     doneTasks() {
       if (this.project) {
         const tasks = this.project.tasks;
-        let toDoTasks = [];
+        let doneTasks = [];
 
         for (const id in tasks) {
           if (tasks[id].status === "done") {
-            toDoTasks.push({
+            doneTasks.push({
               id: id,
               name: tasks[id].name,
               startDate: tasks[id].startDate,
@@ -161,19 +246,19 @@ export default {
           }
         }
 
-        return toDoTasks;
+        return doneTasks;
       }
     },
   },
 
   mounted() {
-    const projectId = this.$route.params.id;
+    this.projectId = this.$route.params.id;
 
-    get(child(ref(database), `projects/${projectId}`))
+    get(child(ref(database), `projects/${this.projectId}`))
       .then((snapshot) => {
         if (snapshot.exists()) {
           this.project = {
-            id: projectId,
+            id: this.projectId,
             name: snapshot.val().name,
             startDate: snapshot.val().startDate,
             endDate: snapshot.val().endDate,
@@ -190,6 +275,126 @@ export default {
       .catch((error) => {
         console.error(error);
       });
+  },
+
+  methods: {
+    openModal(id, name, startDate, endDate, description, employees, status) {
+      this.taskId = id;
+      this.name = name;
+      this.startDate = startDate;
+      this.endDate = endDate;
+      this.description = description;
+      this.employees = employees;
+      this.status = status;
+
+      if (this.status === "todo") {
+        this.$refs.moveTaskToLeft.disabled = true;
+        this.$refs.moveTaskToRight.disabled = false;
+        $("#moveTaskToLeft").removeClass().hide();
+        $("#moveTaskToRight").removeClass().show();
+        $("#moveTaskToLeft").addClass("btn btn-primary");
+        $("#moveTaskToRight").addClass("btn btn-danger");
+      }
+
+      if (this.status === "doing") {
+        this.$refs.moveTaskToLeft.disabled = false;
+        this.$refs.moveTaskToRight.disabled = false;
+        $("#moveTaskToLeft").removeClass().show();
+        $("#moveTaskToRight").removeClass().show();
+        $("#moveTaskToLeft").addClass("btn btn-primary");
+        $("#moveTaskToRight").addClass("btn btn-warning ml-3");
+      }
+
+      if (this.status === "testing") {
+        this.$refs.moveTaskToLeft.disabled = false;
+        this.$refs.moveTaskToRight.disabled = false;
+        $("#moveTaskToLeft").removeClass().show();
+        $("#moveTaskToRight").removeClass().show();
+        $("#moveTaskToLeft").addClass("btn btn-danger");
+        $("#moveTaskToRight").addClass("btn btn-success ml-3");
+      }
+      if (this.status === "done") {
+        this.$refs.moveTaskToLeft.disabled = false;
+        this.$refs.moveTaskToRight.disabled = true;
+        $("#moveTaskToLeft").removeClass().show();
+        $("#moveTaskToRight").removeClass().hide();
+        $("#moveTaskToLeft").addClass("btn btn-warning ml-3");
+      }
+      $("#moveTaskModal").modal("show");
+    },
+
+    moveTaskToLeft() {
+      if (this.status === "doing") {
+        this.updateTasks(this.status, "left");
+      }
+      if (this.status === "testing") {
+        this.updateTasks(this.status, "left");
+      }
+      if (this.status === "done") {
+        this.updateTasks(this.status, "left");
+      }
+    },
+    moveTaskToRight() {
+      if (this.status === "todo") {
+        this.updateTasks(this.status, "right");
+      }
+      if (this.status === "doing") {
+        this.updateTasks(this.status, "right");
+      }
+      if (this.status === "testing") {
+        this.updateTasks(this.status, "right");
+      }
+    },
+
+    updateTasks(type, to) {
+      let status = "";
+
+      if (type === "todo" && to === "right") {
+        status = "doing";
+      }
+
+      if (type === "doing" && to === "right") {
+        status = "testing";
+      }
+      if (type === "testing" && to === "right") {
+        status = "done";
+      }
+      if (type === "doing" && to === "left") {
+        status = "todo";
+      }
+
+      if (type === "testing" && to === "left") {
+        status = "doing";
+      }
+      if (type === "done" && to === "left") {
+        status = "testing";
+      }
+
+      update(
+        ref(database, "projects/" + this.projectId + "/tasks/" + this.taskId),
+        {
+          status: status,
+        }
+      )
+        .then(() => {
+          // Data saved successfully!
+          get(child(ref(database), `projects/${this.projectId}`))
+            .then((snapshot) => {
+              if (snapshot.exists()) {
+                this.project.tasks = snapshot.val().tasks;
+              } else {
+                console.log("No data available");
+              }
+            })
+            .catch((error) => {
+              console.error(error);
+            });
+        })
+        .catch((error) => {
+          // The write failed...
+        });
+      $("#moveTaskModal").modal("hide");
+    },
   },
 };
 </script>
