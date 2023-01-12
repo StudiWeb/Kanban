@@ -16,8 +16,8 @@
     </div>
   </div>
 
-  <div class="row" style="position: relative">
-    <div class="col-xl-6 pr-0">
+  <div class="row">
+    <div class="col" style="position: relative">
       <div class="h5 my-4">Add employees to your team</div>
       <div class="d-flex flex-column flex-lg-row align-items-md-start">
         <!-- employees to choose -->

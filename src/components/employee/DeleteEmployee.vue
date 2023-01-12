@@ -1,10 +1,13 @@
 <template>
   <section>
     <div class="row flex-column mx-0">
-      <div class="col-xl-6 px-0">
-        <div class="h5 my-4 px-0">Delete employee</div>
+      <div class="d-flex align-items-center col-xl-6 px-0">
+        <div class="h5 my-4 px-0 mr-2">Delete employee</div>
+        <div v-if="isLoading" class="spinner-border text-primary" role="status">
+          <span class="sr-only">Loading...</span>
+        </div>
       </div>
-      <div class="card px-0 col-xl-6">
+      <div v-if="isLoading === false" class="card px-0 col-xl-6">
         <div class="card-body">
           <div>
             <div class="px-0 form-group">
@@ -22,21 +25,10 @@
                 class="alert alert-info d-flex align-items-center"
                 role="alert"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  fill="currentColor"
+                <i
                   class="bi bi-exclamation-octagon"
-                  viewBox="0 0 16 16"
-                >
-                  <path
-                    d="M4.54.146A.5.5 0 0 1 4.893 0h6.214a.5.5 0 0 1 .353.146l4.394 4.394a.5.5 0 0 1 .146.353v6.214a.5.5 0 0 1-.146.353l-4.394 4.394a.5.5 0 0 1-.353.146H4.893a.5.5 0 0 1-.353-.146L.146 11.46A.5.5 0 0 1 0 11.107V4.893a.5.5 0 0 1 .146-.353L4.54.146zM5.1 1 1 5.1v5.8L5.1 15h5.8l4.1-4.1V5.1L10.9 1H5.1z"
-                  />
-                  <path
-                    d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995z"
-                  />
-                </svg>
+                  style="font-size: 24px"
+                ></i>
                 <div class="ml-2">
                   {{ alertMesseage }}
                 </div>
@@ -176,10 +168,12 @@ export default {
     return {
       selectedEmployeeId: "empty",
       selectedEmployee: null,
-      employees: [],
       canShowAlert: false,
       modalMesseage: "Please select an employee you want to delete.",
       alertMesseage: "",
+      employees: [],
+      teams: [],
+      isLoading: false,
     };
   },
 
@@ -190,11 +184,14 @@ export default {
         const selectedEmployeeId = id;
         this.selectedEmployee = this.employees.find((e) => e.id === id);
         //checks if an employee is a member of a team
-        if (
-          this.employees.find(
-            (e) => e.id === selectedEmployeeId && e.isTeamMember === true
-          )
-        ) {
+        let isTeamMember = false;
+        this.teams.forEach((team) => {
+          if (team.members.find((m) => m.id === id)) {
+            isTeamMember = true;
+          }
+        });
+
+        if (isTeamMember) {
           this.$refs.deleteEmployeeButton.disabled = true;
           this.canShowAlert = true;
           this.alertMesseage =
@@ -252,30 +249,55 @@ export default {
   },
 
   mounted() {
-    //gets all employees
-    get(child(ref(database), "employees"))
-      .then((snapshot) => {
-        if (snapshot.exists()) {
-          for (const id in snapshot.val()) {
-            this.employees.push({
-              id: id,
-              name: snapshot.val()[id].name,
-              job: snapshot.val()[id].job,
-              isProjectManager: snapshot.val()[id].isProjectManager,
-              isTeamLeader: snapshot.val()[id].isTeamLeader,
-              isTeamMember: snapshot.val()[id].isTeamMember,
-            });
-          }
-        } else {
-          console.log("No employees data available");
-        }
-      })
-      .catch((error) => {
-        console.error(error);
-      });
+    this.loadData();
   },
 
   methods: {
+    async loadData() {
+      this.isLoading = true;
+      //gets all employees
+      await get(child(ref(database), "employees"))
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            for (const id in snapshot.val()) {
+              this.employees.push({
+                id: id,
+                name: snapshot.val()[id].name,
+                job: snapshot.val()[id].job,
+                isProjectManager: snapshot.val()[id].isProjectManager,
+                isTeamLeader: snapshot.val()[id].isTeamLeader,
+              });
+            }
+          } else {
+            console.log("No data available");
+          }
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+
+      await //gets all teams
+      get(child(ref(database), "teams"))
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            for (const id in snapshot.val()) {
+              this.teams.push({
+                id: id,
+                name: snapshot.val()[id].name,
+                members: snapshot.val()[id].members,
+              });
+            }
+          } else {
+            console.log("No data available");
+          }
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+
+      this.isLoading = false;
+    },
+
     openDeleteEmployeeModal() {
       $("#deleteEmployeeModal").modal("show");
     },

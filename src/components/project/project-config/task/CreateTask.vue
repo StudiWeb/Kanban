@@ -1,66 +1,78 @@
 <template>
-  <div class="col-xl-6 px-0">
-    <div class="h5 my-3">Create task</div>
-    <div class="form-group">
-      <label>Task name</label>
-      <input
-        v-model="taskName"
-        id="taskName"
-        type="text"
-        class="form-control"
-      />
-      <div v-if="isTaskNameUsed" class="invalid-feedback">
-        This task name is already used in this project.
+  <div class="row mx-0">
+    <div class="col-xl-6 px-0">
+      <div class="d-flex align-items-center">
+        <div class="h5 my-4 mr-2">Create task</div>
+        <div v-if="isLoading" class="spinner-border text-primary" role="status">
+          <span class="sr-only">Loading...</span>
+        </div>
       </div>
     </div>
-    <div class="form-group">
-      <label>Task description</label>
-      <textarea
-        v-model="taskDescription"
-        id="taskDescription"
-        class="form-control"
-      ></textarea>
+  </div>
+
+  <div v-if="isLoading === false" class="row mx-0">
+    <div class="col-xl-6 px-0">
+      <div class="form-group">
+        <label>Task name</label>
+        <input
+          v-model="taskName"
+          id="taskName"
+          type="text"
+          class="form-control"
+        />
+        <div v-if="isTaskNameUsed" class="invalid-feedback">
+          This task name is already used in this project.
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Task description</label>
+        <textarea
+          v-model="taskDescription"
+          id="taskDescription"
+          class="form-control"
+        ></textarea>
+      </div>
+      <div class="form-group">
+        <label>Start task date</label>
+        <input
+          v-model="startDate"
+          id="startDate"
+          type="date"
+          :max="endDate"
+          class="form-control"
+        />
+      </div>
+      <div class="form-group">
+        <label>End task date</label>
+        <input
+          v-model="endDate"
+          id="endDate"
+          ref="endDate"
+          disabled
+          type="date"
+          :min="startDate"
+          class="form-control"
+        />
+      </div>
+      <div class="form-group">
+        <label>Choose employee</label>
+        <select
+          v-model="selectedEmployeeIds"
+          multiple
+          id="selectedEmployeeIds"
+          class="form-control"
+        >
+          <option value="empty">none</option>
+          <option v-for="m in projectMembers" :key="m.id" :value="m.id">
+            {{ m.name }} - {{ m.job }}
+          </option>
+        </select>
+        <small class="form-text text-muted"
+          >You can select more than one employee</small
+        >
+      </div>
+      <button @click="openModal" class="btn btn-success">Create task</button>
     </div>
-    <div class="form-group">
-      <label>Start task date</label>
-      <input
-        v-model="startDate"
-        id="startDate"
-        type="date"
-        :max="endDate"
-        class="form-control"
-      />
-    </div>
-    <div class="form-group">
-      <label>End task date</label>
-      <input
-        v-model="endDate"
-        id="endDate"
-        ref="endDate"
-        disabled
-        type="date"
-        :min="startDate"
-        class="form-control"
-      />
-    </div>
-    <div class="form-group">
-      <label>Choose employee</label>
-      <select
-        v-model="selectedEmployeeIds"
-        multiple
-        id="selectedEmployeeIds"
-        class="form-control"
-      >
-        <option value="empty">none</option>
-        <option v-for="m in projectMembers" :key="m.id" :value="m.id">
-          {{ m.name }} - {{ m.job }}
-        </option>
-      </select>
-      <small class="form-text text-muted"
-        >You can select more than one employee</small
-      >
-    </div>
-    <button @click="openModal" class="btn btn-success">Create task</button>
   </div>
 
   <teleport to="body">
@@ -172,24 +184,15 @@ export default {
       endDate: "",
       selectedEmployeeIds: [],
       selectedEmployees: [],
-      projects: [],
       selectedProject: null,
       projectMembers: [],
       validationMesseage: "",
       isTaskNameUsed: false,
+      isLoading: false,
     };
   },
 
   watch: {
-    selectedProjectId(projectId) {
-      if (projectId !== "empty") {
-        this.selectedProject = this.projects.find((p) => p.id === projectId);
-        this.projectMembers = this.selectedProject.team.members;
-      } else {
-        this.selectedProject = null;
-      }
-    },
-
     taskName(name) {
       if (name !== "") {
         $("#taskName").removeClass("is-invalid");
@@ -244,35 +247,37 @@ export default {
   },
 
   mounted() {
-    //gets all projects
-    get(child(ref(database), `projects`))
-      .then((data) => {
-        if (data.exists()) {
-          for (const id in data.val()) {
-            this.projects.push({
-              id: id,
-              name: data.val()[id].name,
-              startDate: data.val()[id].startDate,
-              endDate: data.val()[id].endDate,
-              projectManager: data.val()[id].projectManager,
-              team: data.val()[id].team,
-              isProjectVisible: false,
-            });
-          }
-          this.selectedProject = this.projects.find(
-            (p) => p.id === this.selectedProjectId
-          );
-          this.projectMembers = this.selectedProject.team.members;
-        } else {
-          console.log("No data available");
-        }
-      })
-      .catch((error) => {
-        console.error(error);
-      });
+    this.loadData();
   },
 
   methods: {
+    async loadData() {
+      this.isLoading = true;
+      //gets all projects
+      await get(child(ref(database), "projects/" + this.selectedProjectId))
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            this.selectedProject = {
+              id: this.selectedProjectId,
+              name: snapshot.val().name,
+              startDate: snapshot.val().startDate,
+              endDate: snapshot.val().endDate,
+              team: snapshot.val().team,
+              projectManager: snapshot.val().projectManager,
+              teamLeader: snapshot.val().teamLeader,
+              tasks: snapshot.val().tasks,
+            };
+          } else {
+            console.log("No data available");
+          }
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+      this.projectMembers = this.selectedProject.team.members;
+      this.isLoading = false;
+    },
+
     openModal() {
       let validation = true;
 

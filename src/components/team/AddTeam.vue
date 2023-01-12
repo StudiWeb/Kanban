@@ -1,14 +1,23 @@
 <template>
   <section>
+    <div class="col-xl-6 px-0">
+      <div class="d-flex align-items-center">
+        <div class="h5 my-4 mr-2">Add team</div>
+        <div v-if="isLoading" class="spinner-border text-primary" role="status">
+          <span class="sr-only">Loading...</span>
+        </div>
+      </div>
+    </div>
+
     <create-team
+      v-if="isLoading === false"
       @open-modal="openModal"
       @change-key="changeKey"
       :key="componentKey"
+      :employees="employees"
+      :teams="teams"
       :componentName="componentName"
     >
-      <template #header>
-        <span class="h5 d-block my-4">Add team</span>
-      </template>
     </create-team>
   </section>
 
@@ -80,7 +89,7 @@
 
 <script>
 import { initializeApp } from "firebase/app";
-import { getDatabase, update, push, get, child, ref } from "firebase/database";
+import { getDatabase, push, get, child, ref } from "firebase/database";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBiWEX-ygigO9Kj04kWtjASKLJ3RX20uuM",
@@ -96,7 +105,7 @@ const firebaseConfig = {
 const firebase = initializeApp(firebaseConfig);
 const database = getDatabase(firebase);
 
-import CreateTeam from "../view-components/team/CreateTeam.vue";
+import CreateTeam from "./components/add-team/CreateTeam.vue";
 
 export default {
   components: {
@@ -110,54 +119,74 @@ export default {
       componentName: "AddTeam",
       teamName: "",
       teamMembers: [],
-      employees: [],
       componentKey: 0,
-      teamNames: [],
       validationAddTeamModalMesseage: "",
+      isLoading: false,
+      employees: [],
+      teams: [],
     };
   },
 
+  computed: {
+    teamNames() {
+      let names = [];
+      this.teams.forEach((t) => {
+        names.push(t.name);
+      });
+      return names;
+    },
+  },
+
   mounted() {
-    //gets all employees
-    get(child(ref(database), "employees"))
-      .then((snapshot) => {
-        if (snapshot.exists()) {
-          for (const id in snapshot.val()) {
-            this.employees.push({
-              id: id,
-              name: snapshot.val()[id].name,
-              job: snapshot.val()[id].job,
-              isProjectManager: snapshot.val()[id].isProjectManager,
-              isTeamLeader: snapshot.val()[id].isTeamLeader,
-            });
-          }
-
-          this.numberOfEmployees = this.employees.length;
-        } else {
-          console.log("No employees data available");
-        }
-      })
-      .catch((error) => {
-        console.error(error);
-      });
-
-    //gets all team names that are already in use
-    get(child(ref(database), "teams"))
-      .then((snapshot) => {
-        if (snapshot.exists()) {
-          for (const id in snapshot.val()) {
-            this.teamNames.push(snapshot.val()[id].name);
-          }
-        } else {
-          console.log("No teams data available");
-        }
-      })
-      .catch((error) => {
-        console.error(error);
-      });
+    this.loadData();
   },
 
   methods: {
+    async loadData() {
+      this.isLoading = true;
+      //gets all employees
+      await get(child(ref(database), "employees"))
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            for (const id in snapshot.val()) {
+              this.employees.push({
+                id: id,
+                name: snapshot.val()[id].name,
+                job: snapshot.val()[id].job,
+                isProjectManager: snapshot.val()[id].isProjectManager,
+                isTeamLeader: snapshot.val()[id].isTeamLeader,
+              });
+            }
+          } else {
+            console.log("No data available");
+          }
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+
+      await //gets all teams
+      get(child(ref(database), "teams"))
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            for (const id in snapshot.val()) {
+              this.teams.push({
+                id: id,
+                name: snapshot.val()[id].name,
+                members: snapshot.val()[id].members,
+              });
+            }
+          } else {
+            console.log("No data available");
+          }
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+
+      this.isLoading = false;
+    },
+
     openModal(name, members) {
       if (name === "") {
         this.validationAddTeamModalMesseage = "Your teams needs a name.";

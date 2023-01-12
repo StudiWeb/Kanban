@@ -14,9 +14,9 @@
       <ProjectLink
         v-for="p in projects"
         :key="p.id"
-        :isVisible="p.isProjectVisible"
         :title="p.name"
         :id="p.id"
+        :isVisible="p.isVisible"
         page="project"
       />
     </list-column>
@@ -75,7 +75,7 @@ export default {
               projectManager: snapshot.val()[id].projectManager,
               teamLeader: snapshot.val()[id].teamLeader,
               team: snapshot.val()[id].team,
-              isProjectVisible: snapshot.val()[id].isProjectVisible,
+              isVisible: snapshot.val()[id].isVisible,
             });
           }
         } else {

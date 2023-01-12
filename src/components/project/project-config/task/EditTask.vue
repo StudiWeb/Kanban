@@ -1,79 +1,91 @@
 <template>
-  <div class="col-xl-6 px-0">
-    <div class="h5 my-3">Edit task</div>
-    <div class="form-group">
-      <label>Select task</label>
-      <select v-model="selectedTaskId" class="form-control">
-        <option value="empty">none</option>
-        <option v-for="task in tasks" :key="task.id" :value="task.id">
-          {{ task.name }}
-        </option>
-      </select>
-    </div>
-
-    <div v-if="canShowEditTaskPanel">
-      <div class="form-group">
-        <label>Task name</label>
-        <input
-          v-model="taskName"
-          ref="taskName"
-          id="taskName"
-          type="text"
-          class="form-control"
-        />
-        <div class="invalid-feedback">
-          This task name is already in use in this project. Please type
-          different task name.
+  <div class="row mx-0">
+    <div class="col-xl-6 px-0">
+      <div class="d-flex align-items-center">
+        <div class="h5 my-4 mr-2">Edit task</div>
+        <div v-if="isLoading" class="spinner-border text-primary" role="status">
+          <span class="sr-only">Loading...</span>
         </div>
       </div>
+    </div>
+  </div>
+
+  <div v-if="isLoading === false" class="row mx-0">
+    <div class="col-xl-6 px-0">
       <div class="form-group">
-        <label>Task description</label>
-        <textarea
-          v-model="taskDescription"
-          id="taskDescription"
-          class="form-control"
-        ></textarea>
-      </div>
-      <div class="form-group">
-        <label>Start task date</label>
-        <input
-          v-model="startDate"
-          id="startDate"
-          class="form-control"
-          type="date"
-          :max="endDate"
-        />
-      </div>
-      <div class="form-group">
-        <label>End task date</label>
-        <input
-          v-model="endDate"
-          id="endDate"
-          class="form-control"
-          type="date"
-          :min="startDate"
-        />
-      </div>
-      <div class="form-group">
-        <label>Choose employee</label>
-        <select
-          v-model="selectedEmployeeIds"
-          multiple
-          id="selectedEmployeeIds"
-          class="form-control"
-        >
+        <label>Select task</label>
+        <select v-model="selectedTaskId" class="form-control">
           <option value="empty">none</option>
-          <option v-for="m in projectMembers" :key="m.id" :value="m.id">
-            {{ m.name }} - {{ m.job }}
-            <span v-if="m.isSelectedAsProjectManager">(PM)</span>
-            <span v-if="m.isSelectedAsTeamLeader">(TL)</span>
+          <option v-for="task in tasks" :key="task.id" :value="task.id">
+            {{ task.name }}
           </option>
         </select>
-        <small class="form-text text-muted"
-          >You can select more than one employee</small
-        >
       </div>
-      <button @click="openModal" class="btn btn-warning">Edit task</button>
+
+      <div v-if="selectedTaskId !== 'empty'">
+        <div class="form-group">
+          <label>Task name</label>
+          <input
+            v-model="taskName"
+            ref="taskName"
+            id="taskName"
+            type="text"
+            class="form-control"
+          />
+          <div class="invalid-feedback">
+            This task name is already in use in this project. Please type
+            different task name.
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Task description</label>
+          <textarea
+            v-model="taskDescription"
+            id="taskDescription"
+            class="form-control"
+          ></textarea>
+        </div>
+        <div class="form-group">
+          <label>Start task date</label>
+          <input
+            v-model="startDate"
+            id="startDate"
+            class="form-control"
+            type="date"
+            :max="endDate"
+          />
+        </div>
+        <div class="form-group">
+          <label>End task date</label>
+          <input
+            v-model="endDate"
+            id="endDate"
+            class="form-control"
+            type="date"
+            :min="startDate"
+          />
+        </div>
+        <div class="form-group">
+          <label>Choose employee</label>
+          <select
+            v-model="selectedEmployeeIds"
+            multiple
+            id="selectedEmployeeIds"
+            class="form-control"
+          >
+            <option value="empty">none</option>
+            <option v-for="m in projectMembers" :key="m.id" :value="m.id">
+              {{ m.name }} - {{ m.job }}
+              <span v-if="m.isSelectedAsProjectManager">(PM)</span>
+              <span v-if="m.isSelectedAsTeamLeader">(TL)</span>
+            </option>
+          </select>
+          <small class="form-text text-muted"
+            >You can select more than one employee</small
+          >
+        </div>
+        <button @click="openModal" class="btn btn-warning">Edit task</button>
+      </div>
     </div>
   </div>
 
@@ -185,26 +197,17 @@ export default {
       taskDescription: "",
       startDate: "",
       endDate: "",
-      projects: [],
       projectMembers: [],
       tasks: [],
       taskNames: [],
       selectedEmployeeIds: [],
       selectedEmployees: [],
-      canShowEditTaskPanel: false,
       selectedProject: null,
+      isLoading: false,
     };
   },
 
   watch: {
-    selectedProjectId(projectId) {
-      this.selectedProject = this.projects.find((p) => p.id === projectId);
-      this.projectMembers = this.projects.find(
-        (p) => p.id === projectId
-      ).team.members;
-      this.tasks = this.projects.find((p) => p.id === projectId).tasks;
-    },
-
     selectedTaskId(taskId) {
       if (taskId !== "empty") {
         //resets employees who are asigned to task
@@ -216,14 +219,11 @@ export default {
         this.startDate = task.startDate;
         this.endDate = task.endDate;
         //inits employees who are asigned to task
-        if (task.employees === "none") {
+        if (task.employees.find((e) => e.name === "none")) {
           this.selectedEmployeeIds.push("empty");
         } else {
-          task.employees.forEach((t) => this.selectedEmployeeIds.push(t.id));
+          task.employees.forEach((e) => this.selectedEmployeeIds.push(e.id));
         }
-        this.canShowEditTaskPanel = true;
-      } else {
-        this.canShowEditTaskPanel = false;
       }
     },
 
@@ -277,56 +277,50 @@ export default {
   },
 
   mounted() {
-    //gets all projets
-    get(child(ref(database), `projects`))
-      .then((data) => {
-        if (data.exists()) {
-          for (const id in data.val()) {
-            this.projects.push({
-              id: id,
-              name: data.val()[id].name,
-              startDate: data.val()[id].startDate,
-              endDate: data.val()[id].endDate,
-              projectManager: data.val()[id].projectManager,
-              team: data.val()[id].team,
-              tasks: data.val()[id].tasks,
-              isProjectVisible: false,
-            });
-          }
-
-          this.selectedProject = this.projects.find(
-            (p) => p.id === this.selectedProjectId
-          );
-          this.projectMembers = this.projects.find(
-            (p) => p.id === this.selectedProjectId
-          ).team.members;
-          //gets all tasks from selected project
-          const tasks = Array.of(
-            this.projects.find((p) => p.id === this.selectedProjectId).tasks
-          );
-          tasks.forEach((task) => {
-            for (const id in task) {
-              this.tasks.push({
-                id: id,
-                name: task[id].name,
-                description: task[id].description,
-                startDate: task[id].startDate,
-                endDate: task[id].endDate,
-                employees: task[id].employees,
-                status: task[id].status,
-              });
-            }
-          });
-        } else {
-          console.log("No data available");
-        }
-      })
-      .catch((error) => {
-        console.error(error);
-      });
+    this.loadData();
   },
 
   methods: {
+    async loadData() {
+      this.isLoading = true;
+      //gets all projects
+      await get(child(ref(database), "projects/" + this.selectedProjectId))
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            this.selectedProject = {
+              id: this.selectedProjectId,
+              name: snapshot.val().name,
+              startDate: snapshot.val().startDate,
+              endDate: snapshot.val().endDate,
+              team: snapshot.val().team,
+              projectManager: snapshot.val().projectManager,
+              teamLeader: snapshot.val().teamLeader,
+              tasks: snapshot.val().tasks,
+            };
+          } else {
+            console.log("No data available");
+          }
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+
+      for (const id in this.selectedProject.tasks) {
+        this.tasks.push({
+          id: id,
+          name: this.selectedProject.tasks[id].name,
+          description: this.selectedProject.tasks[id].description,
+          startDate: this.selectedProject.tasks[id].startDate,
+          endDate: this.selectedProject.tasks[id].endDate,
+          employees: this.selectedProject.tasks[id].employees,
+          status: this.selectedProject.tasks[id].status,
+        });
+      }
+
+      this.projectMembers = this.selectedProject.team.members;
+      this.isLoading = false;
+    },
+
     openModal() {
       const task = this.tasks.find((t) => t.id === this.selectedTaskId);
       const name = task.name;

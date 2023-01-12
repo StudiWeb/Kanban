@@ -1,6 +1,18 @@
 <template>
+
+      <div class="row mx-0">
     <div class="col-xl-6 px-0">
-        <div class="h5 my-3">Delete task</div>
+      <div class="d-flex align-items-center">
+        <div class="h5 my-4 mr-2">Delete task</div>
+        <div v-if="isLoading" class="spinner-border text-primary" role="status">
+          <span class="sr-only">Loading...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div v-if="isLoading === false" class="row mx-0">
+    <div class="col-xl-6 px-0">
         <div class="form-group">
             <label>Select task</label>
             <select v-model="selectedTaskId" class="form-control">
@@ -10,38 +22,40 @@
         </div>
         <div v-if="isTaskSelected" class="card">
             <div class="card-body">
-                <h5 class="card-title">Project - {{getSelectedProjectName}}</h5>
-                <h6 class="card-subtitle text-muted">Task - {{getSelectedTaskName}}</h6>
+                <h5 class="card-title">Project - {{projectName}}</h5>
+                <h6 class="card-subtitle text-muted">Task - {{taskName}}</h6>
                 <div class="card-text mt-2">
                     <span class="font-weight-bold text-break">Description</span>
-                    <div>{{getSelectedTaskDescription}}</div>
+                    <div>{{taskDescription}}</div>
                 </div>
                 <div class="card-text my-2">
                     <div class="font-weight-bold"> 
-                        {{(getSelectedEmployeesToDoTaskLength > 1) ? 'Employees' : 'Employee'}}
+                        {{(numberOfEmployeesAssignedToTask > 1) ? 'Employees' : 'Employee'}}
                     </div>
-                    <div v-for="e in getSelectedEmployeesToDoTask">
+                    <div v-for="e in employeesAssignedToTask">
                         {{e.name}} - <span class="font-italic">{{e.job}}</span>
                     </div> 
                 </div>
                 <div class="d-flex">
                     <p class="card-text">
                         <span class="font-weight-bold">Start date</span>
-                        <div>{{getSelectedTaskStartDate}}</div>
+                        <div>{{taskStartDate}}</div>
                     </p>
                     <p class="card-text mx-4">
                         <span class="font-weight-bold">End date</span>
-                        <div>{{getSelectedTaskEndDate}}</div>
+                        <div>{{taskEndDate}}</div>
                     </p>
                     <p class="card-text">
                         <span class="font-weight-bold">Status</span>
-                        <div>{{getSelectedTaskStatus}}</div>
+                        <div>{{taskStatus}}</div>
                     </p>
                 </div>
                 <button @click="openModal" class="btn btn-danger">Delete</button>
             </div>
         </div>
     </div>
+  </div>
+
 
     <teleport to="body">
         <base-modal id="deleteTaskModal">
@@ -49,18 +63,18 @@
             <template #body>
                 <div>
                     <div class="font-weight-bold">Project name</div>
-                    <div>{{getSelectedProjectName}}</div>
+                    <div>{{projectName}}</div>
                 </div>
                 <div class="row my-3">
                     <div class="col-4">
                         <div class="font-weight-bold">Task name</div>
-                        <div>{{getSelectedTaskName}}</div>
+                        <div>{{taskName}}</div>
                     </div>
                     <div>
                         <div class="font-weight-bold"> 
-                            {{(getSelectedEmployeesToDoTaskLength > 1) ? 'Employees' : 'Employee'}}
+                            {{(numberOfEmployeesAssignedToTask > 1) ? 'Employees' : 'Employee'}}
                         </div>
-                        <div v-for="e in getSelectedEmployeesToDoTask" :key="e.id">
+                        <div v-for="e in employeesAssignedToTask" :key="e.id">
                             {{e.name}} - <span class="font-italic">{{e.job}}</span>
                         </div> 
                     </div>
@@ -68,16 +82,16 @@
                 <div class="row">
                     <div class="col-4">
                         <div class="font-weight-bold">Start date</div>
-                        <div>{{getSelectedTaskStartDate}}</div>
+                        <div>{{taskStartDate}}</div>
                     </div>
                     <div>
                         <div class="font-weight-bold">End date</div>
-                        <div>{{getSelectedTaskEndDate}}</div>
+                        <div>{{taskEndDate}}</div>
                     </div>
                 </div>
                 <div class="mt-2">
                     <div class="font-weight-bold">Task description</div>
-                    <div class="text-break">{{getSelectedTaskDescription}}</div>
+                    <div class="text-break">{{taskDescription}}</div>
                 </div>
             </template>
             <template #footer>
@@ -85,7 +99,7 @@
                     <div>Are you sure you want to delete this task?</div>
                     <div>
                         <button @click="deleteTask" class="btn btn-success mr-2">Yes</button>
-                        <button @click="closeModal" class="btn btn-primary">No</button>
+                        <button @click="closeDeleteTaskModal" class="btn btn-primary">No</button>
                     </div>
                 </div>
             </template>
@@ -109,7 +123,7 @@
 <script>
 
 import { initializeApp } from "firebase/app";
-import { getDatabase , set , ref } from "firebase/database";
+import { getDatabase , set , ref, get, child } from "firebase/database";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBiWEX-ygigO9Kj04kWtjASKLJ3RX20uuM",
@@ -133,9 +147,9 @@ export default {
     data() {
         return {
             selectedTaskId: 'empty',
-            tasks: [],
             selectedProject: null,
             isTaskSelected: false,
+            isLoading: false
         }
     },
 
@@ -146,87 +160,109 @@ export default {
             } else {
                 this.isTaskSelected = false;
             }
-        }
+        },
     },
 
     computed: {
-        getSelectedProjectName() {
+        tasks() {
+            if(this.selectedProject) {
+                let tasks = [];
+                for(const id in this.selectedProject.tasks) {
+                    tasks.push({
+                        id: id,
+                        name: this.selectedProject.tasks[id].name,
+                        description: this.selectedProject.tasks[id].description,
+                        startDate: this.selectedProject.tasks[id].startDate,
+                        endDate: this.selectedProject.tasks[id].endDate,
+                        employees: this.selectedProject.tasks[id].employees,
+                        status: this.selectedProject.tasks[id].status
+                    })
+                }
+                return tasks;
+            } else {
+                return  [];
+            }
+        },
+        projectName() {
             if(this.selectedProject !== null) {
                 return this.selectedProject.name;
             }
         },
 
-        getSelectedTaskName() {
+        taskName() {
             if(this.selectedTaskId !== 'empty') {
                 return this.tasks.find((task) => task.id === this.selectedTaskId).name;
             }
         },
 
-        getSelectedTaskDescription() {
+        taskDescription() {
             if(this.selectedTaskId !== 'empty') {
                 return this.tasks.find((task) => task.id === this.selectedTaskId).description;
             }
         },
 
-        getSelectedTaskStartDate() {
+        taskStartDate() {
             if(this.selectedTaskId !== 'empty') {
                 return this.tasks.find((task) => task.id === this.selectedTaskId).startDate;
             }
         },
 
-        getSelectedTaskEndDate() {
+        taskEndDate() {
             if(this.selectedTaskId !== 'empty') {
                 return this.tasks.find((task) => task.id === this.selectedTaskId).endDate;
             }
         },
 
-        getSelectedEmployeesToDoTask() {
+        employeesAssignedToTask() {
             if(this.selectedTaskId !== 'empty') {
                 return this.tasks.find((task) => task.id === this.selectedTaskId).employees;
             }
         },
 
-        getSelectedEmployeesToDoTaskLength() {
+        numberOfEmployeesAssignedToTask() {
             if(this.selectedTaskId !== 'empty') {
                 return this.tasks.find((task) => task.id === this.selectedTaskId).employees.length;
             }
         },
 
-        getSelectedTaskStatus() {
+        taskStatus() {
             if(this.selectedTaskId !== 'empty') {
                 return this.tasks.find((task) => task.id === this.selectedTaskId).status;
             }
-        }
+        },
     },
 
     mounted() {
-        fetch('https://vue-kanban-5ad84-default-rtdb.europe-west1.firebasedatabase.app/projects.json')
-        .then((response) => {
-            if(response.ok) {
-                return response.json();
-            }
-        })
-        .then((data) => {
-            for(const d in data) {
-                if(d === this.selectedProjectId) {
-                    this.selectedProject = data[d];
-                    for(const t in data[d].tasks) {
-                        this.tasks.push({
-                            id: t,
-                            name: data[d].tasks[t].name,
-                            description: data[d].tasks[t].description,
-                            startDate: data[d].tasks[t].startDate,
-                            endDate: data[d].tasks[t].endDate,
-                            employees: data[d].tasks[t].employees,
-                            status: data[d].tasks[t].status
-                        });
-                    }
-                } 
-            }
-        })
+        this.loadData();
     },
 
     methods: {
+
+            async loadData() {
+      this.isLoading = true;
+      //gets all projects
+      await get(child(ref(database), "projects/" + this.selectedProjectId))
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            this.selectedProject = {
+              id: this.selectedProjectId,
+              name: snapshot.val().name,
+              startDate: snapshot.val().startDate,
+              endDate: snapshot.val().endDate,
+              team: snapshot.val().team,
+              projectManager: snapshot.val().projectManager,
+              teamLeader: snapshot.val().teamLeader,
+              tasks: snapshot.val().tasks,
+            };
+          } else {
+            console.log("No data available");
+          }
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+      this.isLoading = false;
+    },
         openModal() {
             $('#deleteTaskModal').modal('show');
         },

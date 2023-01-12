@@ -1,5 +1,6 @@
 <template>
   <section>
+    <div class="h5 my-3">Edit project</div>
     <div class="col-xl-6 px-0">
       <div class="form-group">
         <label>Project name</label>
@@ -94,60 +95,20 @@
                 <td>{{ member.name }}</td>
                 <td>{{ member.job }}</td>
                 <td class="text-center">
-                  <svg
+                  <i
                     v-if="member.isSelectedAsProjectManager"
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    fill="currentColor"
                     class="bi bi-check"
-                    viewBox="0 0 16 16"
-                  >
-                    <path
-                      d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"
-                    />
-                  </svg>
-                  <svg
-                    v-else
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    fill="currentColor"
-                    class="bi bi-dash"
-                    viewBox="0 0 16 16"
-                  >
-                    <path
-                      d="M4 8a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7A.5.5 0 0 1 4 8z"
-                    />
-                  </svg>
+                    style="font-size: 16px"
+                  ></i>
+                  <i v-else class="bi bi-dash" style="font-size: 16px"></i>
                 </td>
                 <td class="text-center">
-                  <svg
+                  <i
                     v-if="member.isSelectedAsTeamLeader"
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    fill="currentColor"
                     class="bi bi-check"
-                    viewBox="0 0 16 16"
-                  >
-                    <path
-                      d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"
-                    />
-                  </svg>
-                  <svg
-                    v-else
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    fill="currentColor"
-                    class="bi bi-dash"
-                    viewBox="0 0 16 16"
-                  >
-                    <path
-                      d="M4 8a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7A.5.5 0 0 1 4 8z"
-                    />
-                  </svg>
+                    style="font-size: 16px"
+                  ></i>
+                  <i v-else class="bi bi-dash" style="font-size: 16px"></i>
                 </td>
               </tr>
             </tbody>
@@ -304,6 +265,7 @@ export default {
       teamName: "",
       project: null,
       employees: [],
+      projects: [],
     };
   },
 
@@ -322,78 +284,76 @@ export default {
   },
 
   mounted() {
-    get(child(ref(database), "employees"))
-      .then((snapshot) => {
-        if (snapshot.exists()) {
-          for (const id in snapshot.val()) {
-            this.employees.push({
-              id: id,
-              name: snapshot.val()[id].name,
-              job: snapshot.val()[id].job,
-              isProjectManager: snapshot.val()[id].isProjectManager,
-              isTeamLeader: snapshot.val()[id].isTeamLeader,
-            });
-
-            if (snapshot.val()[id].isProjectManager) {
-              this.projectManagers.push({
-                id: id,
-                name: snapshot.val()[id].name,
-                job: snapshot.val()[id].job,
-                isProjectManager: snapshot.val()[id].isProjectManager,
-                isTeamLeader: snapshot.val()[id].isTeamLeader,
-              });
-            }
-
-            if (snapshot.val()[id].isTeamLeader) {
-              this.teamLeaders.push({
-                id: id,
-                name: snapshot.val()[id].name,
-                job: snapshot.val()[id].job,
-                isProjectManager: snapshot.val()[id].isProjectManager,
-                isTeamLeader: snapshot.val()[id].isTeamLeader,
-              });
-            }
-          }
-        } else {
-          console.log("No data available");
-        }
-      })
-      .catch((error) => {
-        console.error(error);
-      });
-
-    get(child(ref(database), "projects/" + this.selectedProjectId))
-      .then((snapshot) => {
-        if (snapshot.exists()) {
-          this.project = {
-            name: snapshot.val().name,
-            startDate: snapshot.val().startDate,
-            endDate: snapshot.val().endDate,
-            projectManager: snapshot.val().projectManager,
-            teamLeader: snapshot.val().teamLeader,
-            team: snapshot.val().team,
-            isProjectVisible: snapshot.val().isProjectVisible,
-          };
-
-          this.projectName = snapshot.val().name;
-          this.startDate = snapshot.val().startDate;
-          this.endDate = snapshot.val().endDate;
-          this.projectManager = snapshot.val().projectManager;
-          this.projectManagerId = snapshot.val().projectManager.id;
-          this.teamLeader = snapshot.val().teamLeader;
-          this.teamLeaderId = snapshot.val().teamLeader.id;
-          this.teamMembers = snapshot.val().team.members;
-          this.teamName = snapshot.val().team.name;
-        } else {
-          console.log("No data available");
-        }
-      })
-      .catch((error) => {
-        console.error(error);
-      });
+    this.loadData();
   },
 
   methods: {
+    async loadData() {
+      this.isLoading = true;
+      await get(child(ref(database), "employees"))
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            for (const id in snapshot.val()) {
+              this.employees.push({
+                id: id,
+                name: snapshot.val()[id].name,
+                job: snapshot.val()[id].job,
+                isProjectManager: snapshot.val()[id].isProjectManager,
+                isTeamLeader: snapshot.val()[id].isTeamLeader,
+              });
+            }
+          } else {
+            console.log("No data available");
+          }
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+
+      await get(child(ref(database), "projects"))
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            for (const id in snapshot.val()) {
+              this.projects.push({
+                id: id,
+                name: snapshot.val()[id].name,
+                startDate: snapshot.val()[id].startDate,
+                endDate: snapshot.val()[id].endDate,
+                projectManager: snapshot.val()[id].projectManager,
+                teamLeader: snapshot.val()[id].teamLeader,
+                team: snapshot.val()[id].team,
+                tasks: snapshot.val()[id].tasks,
+                isVisible: snapshot.val()[id].isVisible,
+              });
+            }
+          } else {
+            console.log("No data available");
+          }
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+      this.employees.forEach((e) => {
+        if (e.isProjectManager) {
+          this.projectManagers.push(e);
+        }
+        if (e.isTeamLeader) {
+          this.teamLeaders.push(e);
+        }
+      });
+      this.project = this.projects.find((p) => p.id === this.selectedProjectId);
+      this.projectName = this.project.name;
+      this.startDate = this.project.startDate;
+      this.endDate = this.project.endDate;
+      this.projectManager = this.project.projectManager;
+      this.projectManagerId = this.project.projectManager.id;
+      this.teamLeader = this.project.teamLeader;
+      this.teamLeaderId = this.project.teamLeader.id;
+      this.teamMembers = this.project.team.members;
+      this.teamName = this.project.team.name;
+      this.isLoading = false;
+    },
+
     updateTeam(members) {
       members.forEach((m) => {
         m.isSelectedAsProjectManager = false;

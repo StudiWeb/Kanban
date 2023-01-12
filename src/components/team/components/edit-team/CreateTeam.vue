@@ -1,160 +1,130 @@
 <template>
-  <div v-if="componentName === 'EditTeam'" class="row">
-    <div class="col-xl-6">
-      <div class="h5 my-4">Edit team</div>
-      <div class="px-0 form-group">
-        <label>Select team</label>
-        <select v-model="selectedTeamId" class="form-control">
-          <option value="empty">none</option>
-          <option v-for="team in teams" :key="team.id" :value="team.id">
-            {{ team.name }}
-          </option>
-        </select>
-      </div>
-    </div>
-  </div>
-
   <div class="row">
     <div class="col-xl-6">
-      <slot name="header"></slot>
-      <div class="px-0 form-group">
-        <label>Team name</label>
-        <input
-          v-model="enteredTeamName"
-          id="teamName"
-          class="form-control"
-          aria-describedby="invalidTeamName"
-          ref="teamNameInput"
-          type="text"
-        />
-        <div
-          v-if="teamNameExists"
-          id="invalidTeamName"
-          class="invalid-feedback"
-        >
-          There is already a team wtih this name. Please type different team
-          name.
+      <div class="d-flex align-items-center">
+        <div class="h5 my-4 mr-2">Edit team</div>
+        <div v-if="isLoading" class="spinner-border text-primary" role="status">
+          <span class="sr-only">Loading...</span>
         </div>
       </div>
     </div>
   </div>
-
-  <div class="row">
-    <div class="col-xl-6">
-      <div class="h5 my-4">Add employees to your team</div>
-      <div class="d-flex flex-column flex-lg-row align-items-md-start">
-        <!-- employees to choose -->
-        <the-employees title="Employees">
-          <template #search>
-            <div class="form-group">
-              <input
-                v-model="search"
-                type="search"
-                class="form-control"
-                placeholder="search by name or job"
-              />
-            </div>
-          </template>
-          <template #default>
-            <team-member
-              v-for="e in employees"
-              @click="selectEmployee(e.id)"
-              :id="e.id"
-              :name="e.name"
-              :job="e.job"
-              :class="{ selectedToMove: e.isSelected }"
-            >
-            </team-member>
-          </template>
-        </the-employees>
-
-        <!-- move buttons -->
-        <div
-          class="d-flex flex-column align-self-center align-items-center m-3"
-        >
-          <button
-            @click="moveEmployeeToTeam"
-            id="moveToTeam"
-            ref="moveEmployeeToTeamButton"
-            type="button"
-            class="btn btn-success my-2"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              fill="currentColor"
-              class="bi bi-arrow-right"
-              viewBox="0 0 16 16"
-            >
-              <path
-                fill-rule="evenodd"
-                d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z"
-              />
-            </svg>
-          </button>
-          <button
-            @click="moveTeamMemberToEmployees"
-            id="moveToEmployees"
-            ref="moveTeamMemberToEmployeesButton"
-            type="button"
-            class="btn btn-danger my-2"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              fill="currentColor"
-              class="bi bi-arrow-left"
-              viewBox="0 4 16 16"
-            >
-              <path
-                fill-rule="evenodd"
-                d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"
-              />
-            </svg>
-          </button>
+  <div v-if="isLoading === false">
+    <div class="row">
+      <div class="col-xl-6">
+        <div class="form-group">
+          <label>Select team</label>
+          <select v-model="selectedTeamId" class="form-control">
+            <option value="empty">none</option>
+            <option v-for="team in teams" :key="team.id" :value="team.id">
+              {{ team.name }}
+            </option>
+          </select>
         </div>
-
-        <!-- team members -->
-        <the-employees :title="teamName">
-          <template #default>
-            <team-member
-              v-for="m in teamMembers"
-              @click="selectTeamMember(m.id)"
-              :key="m.id"
-              :id="m.id"
-              :name="m.name"
-              :job="m.job"
-              :class="{ selectedToDelete: m.isSelected }"
-            >
-            </team-member>
-          </template>
-        </the-employees>
       </div>
-      <button
-        v-if="componentName === 'AddTeam'"
-        @click="openModal"
-        ref="saveTeamButton"
-        class="btn btn-success my-4 align-self-start align-self-xl-end"
-      >
-        Save team
-      </button>
-      <button
-        v-if="componentName === 'EditTeam'"
-        @click="openModal"
-        ref="editTeamButton"
-        class="btn btn-warning my-4 align-self-start align-self-xl-end"
-      >
-        Edit team
-      </button>
     </div>
+    <div class="row">
+      <div class="col-xl-6">
+        <div class="px-0 form-group">
+          <label>Team name</label>
+          <input
+            v-model="enteredTeamName"
+            id="teamName"
+            class="form-control"
+            aria-describedby="invalidTeamName"
+            ref="teamNameInput"
+            type="text"
+          />
+          <div
+            v-if="teamNameExists"
+            id="invalidTeamName"
+            class="invalid-feedback"
+          >
+            There is already a team wtih this name. Please type different team
+            name.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="h5 my-4">Add employees to your team</div>
+    <div class="d-flex flex-column flex-lg-row align-items-md-start">
+      <!-- employees to choose -->
+      <the-employees title="Employees">
+        <template #search>
+          <div class="form-group">
+            <input
+              v-model="search"
+              type="search"
+              class="form-control"
+              placeholder="search by name or job"
+            />
+          </div>
+        </template>
+        <template #default>
+          <team-member
+            v-for="e in employees"
+            @click="selectEmployee(e.id)"
+            :id="e.id"
+            :name="e.name"
+            :job="e.job"
+            :class="{ selectedToMove: e.isSelected }"
+          >
+          </team-member>
+        </template>
+      </the-employees>
+
+      <!-- move buttons -->
+      <div class="d-flex flex-column align-self-center align-items-center m-3">
+        <button
+          @click="moveEmployeeToTeam"
+          id="moveToTeam"
+          ref="moveEmployeeToTeamButton"
+          type="button"
+          class="btn btn-success my-2"
+        >
+          <i class="bi bi-arrow-right" style="font-size: 16px"></i>
+        </button>
+        <button
+          @click="moveTeamMemberToEmployees"
+          id="moveToEmployees"
+          ref="moveTeamMemberToEmployeesButton"
+          type="button"
+          class="btn btn-danger my-2"
+        >
+          <i class="bi bi-arrow-left" style="font-size: 16px"></i>
+        </button>
+      </div>
+
+      <!-- team members -->
+      <the-employees :title="teamName">
+        <template #default>
+          <team-member
+            v-for="m in teamMembers"
+            @click="selectTeamMember(m.id)"
+            :key="m.id"
+            :id="m.id"
+            :name="m.name"
+            :job="m.job"
+            :class="{ selectedToDelete: m.isSelected }"
+          >
+          </team-member>
+        </template>
+      </the-employees>
+    </div>
+    <button
+      @click="openModal"
+      ref="editTeamButton"
+      class="btn btn-warning my-4 align-self-start align-self-xl-end"
+    >
+      Edit team
+    </button>
   </div>
 </template>
 
 <script>
 import { initializeApp } from "firebase/app";
-import { getDatabase, set, ref } from "firebase/database";
+import { getDatabase, set, get, child, ref } from "firebase/database";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBiWEX-ygigO9Kj04kWtjASKLJ3RX20uuM",
@@ -170,8 +140,8 @@ const firebaseConfig = {
 const firebase = initializeApp(firebaseConfig);
 const database = getDatabase(firebase);
 
-import TheEmployees from "./TheEmployees.vue";
-import TeamMember from "./TeamMember.vue";
+import TheEmployees from "./../../../view-components/team/TheEmployees.vue";
+import TeamMember from "./../../../view-components/team/TeamMember.vue";
 
 export default {
   emits: ["change-team"],
@@ -181,26 +151,25 @@ export default {
     TeamMember,
   },
 
-  props: ["componentName"],
-
   emits: ["open-modal", "change-key"],
 
   data() {
     return {
-      selectedTeamId: "empty",
       selectedTeam: null,
       enteredTeamName: "",
       teamNames: [],
       selectedEmployee: null,
       selectedTeamMember: null,
       selectedProjectManager: null,
-      employees: [],
-      teams: [],
       teamMembers: [],
       moveEmployeeToTeamButton: null,
       moveTeamMemberToEmployeesButton: null,
       teamNameExists: false,
       search: "",
+      employees: [],
+      teams: [],
+      selectedTeamId: "empty",
+      isLoading: false,
     };
   },
 
@@ -251,52 +220,37 @@ export default {
           (team) => team.name !== this.selectedTeam.name
         );
 
-        //gets employees and team leaders
-        fetch(
-          "https://vue-kanban-5ad84-default-rtdb.europe-west1.firebasedatabase.app/employees.json"
-        )
-          .then((response) => {
-            if (response.ok) {
-              return response.json();
+        if (this.selectedTeam) {
+          this.enteredTeamName = this.selectedTeam.name;
+          this.teamMembers = this.selectedTeam.members;
+        }
+
+        this.employees = [];
+        get(child(ref(database), "employees"))
+          .then((snapshot) => {
+            if (snapshot.exists()) {
+              for (const id in snapshot.val()) {
+                this.employees.push({
+                  id: id,
+                  name: snapshot.val()[id].name,
+                  job: snapshot.val()[id].job,
+                  isProjectManager: snapshot.val()[id].isProjectManager,
+                  isTeamLeader: snapshot.val()[id].isTeamLeader,
+                });
+              }
+
+              this.teamMembers.forEach((t) => {
+                while (this.employees.find((e) => e.id === t.id)) {
+                  const index = this.employees.findIndex((e) => e.id === t.id);
+                  this.employees.splice(index, 1);
+                }
+              });
+            } else {
+              console.log("No data available");
             }
           })
-          .then((data) => {
-            this.employees = [];
-
-            for (const id in data) {
-              //gets employees
-              this.employees.push({
-                id: id,
-                name: data[id].name,
-                job: data[id].job,
-                isProjectManager: data[id].isProjectManager,
-                isTeamLeader: data[id].isTeamLeader,
-                isSelected: false,
-              });
-            }
-
-            if (this.selectedTeam) {
-              this.enteredTeamName = this.selectedTeam.name;
-              this.teamMembers = this.selectedTeam.members;
-            }
-
-            this.teamMembers.forEach((t) => {
-              while (this.employees.find((e) => e.id === t.id)) {
-                const index = this.employees.findIndex((e) => e.id === t.id);
-                this.employees.splice(index, 1);
-              }
-            });
-
-            //sorts employees by name
-            this.employees.sort(function (a, b) {
-              if (a.name < b.name) {
-                return -1;
-              }
-              if (a.name > b.name) {
-                return 1;
-              }
-              return 0;
-            });
+          .catch((error) => {
+            console.error(error);
           });
       } else {
         //rerenders component if a team is not selected
@@ -365,86 +319,70 @@ export default {
   },
 
   mounted() {
-    //disables team name input for 'Edit team'
-    if (this.componentName === "EditTeam") {
-      this.$refs.teamNameInput.disabled = true;
-    }
+    //disables team name input
+    this.$refs.teamNameInput.disabled = true;
 
     //disables buttons that moves employees
     this.$refs.moveEmployeeToTeamButton.disabled = true;
     this.$refs.moveTeamMemberToEmployeesButton.disabled = true;
 
-    //gets employees and team leaders
-    fetch(
-      "https://vue-kanban-5ad84-default-rtdb.europe-west1.firebasedatabase.app/employees.json"
-    )
-      .then((response) => {
-        if (response.ok) {
-          return response.json();
-        }
-      })
-      .then((data) => {
-        this.employees = [];
-
-        for (const id in data) {
-          //gets employees
-          this.employees.push({
-            id: id,
-            name: data[id].name,
-            job: data[id].job,
-            isProjectManager: data[id].isProjectManager,
-            isTeamLeader: data[id].isTeamLeader,
-            isSelected: false,
-          });
-
-          //sorts employees by name
-          this.employees.sort(function (a, b) {
-            if (a.name < b.name) {
-              return -1;
-            }
-            if (a.name > b.name) {
-              return 1;
-            }
-            return 0;
-          });
-        }
-      });
-
-    //gets all teams
-    fetch(
-      "https://vue-kanban-5ad84-default-rtdb.europe-west1.firebasedatabase.app/teams.json"
-    )
-      .then((response) => {
-        if (response.ok) {
-          return response.json();
-        }
-      })
-      .then((data) => {
-        for (const id in data) {
-          this.teams.push({
-            id: id,
-            name: data[id].name,
-            job: data[id].job,
-            members: data[id].members,
-          });
-        }
-      });
+    this.loadData();
   },
 
   methods: {
-    openModal() {
-      if (this.componentName === "AddTeam") {
-        this.$emit("open-modal", this.enteredTeamName, this.teamMembers);
-      }
+    async loadData() {
+      this.isLoading = true;
 
-      if (this.componentName === "EditTeam") {
-        this.$emit(
-          "open-modal",
-          this.enteredTeamName,
-          this.teamMembers,
-          this.selectedTeamId
-        );
-      }
+      //gets all employees
+      await get(child(ref(database), "employees"))
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            for (const id in snapshot.val()) {
+              this.employees.push({
+                id: id,
+                name: snapshot.val()[id].name,
+                job: snapshot.val()[id].job,
+                isProjectManager: snapshot.val()[id].isProjectManager,
+                isTeamLeader: snapshot.val()[id].isTeamLeader,
+              });
+            }
+          } else {
+            console.log("No data available");
+          }
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+
+      await //gets all teams
+      get(child(ref(database), "teams"))
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            for (const id in snapshot.val()) {
+              this.teams.push({
+                id: id,
+                name: snapshot.val()[id].name,
+                members: snapshot.val()[id].members,
+              });
+            }
+          } else {
+            console.log("No data available");
+          }
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+
+      this.isLoading = false;
+    },
+
+    openModal() {
+      this.$emit(
+        "open-modal",
+        this.enteredTeamName,
+        this.teamMembers,
+        this.selectedTeamId
+      );
     },
 
     setTeamName(e) {

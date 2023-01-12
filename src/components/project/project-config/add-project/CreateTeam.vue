@@ -2,7 +2,7 @@
   <div class="row">
     <div class="col-xl-12">
       <slot name="header"></slot>
-      <div class="px-0 form-group">
+      <div class="col-xl-6 px-0 form-group">
         <label>Team name</label>
         <input
           v-model="teamName"
@@ -16,123 +16,93 @@
     </div>
   </div>
 
-  <div class="row">
-    <div class="col-xl-12">
-      <div class="h5 my-4">Add employees to your team</div>
-      <div
-        class="d-flex flex-column flex-lg-row align-items-md-start"
-        aria-live="polite"
-        aria-atomic="true"
-        style="position: relative"
+  <div class="h5 my-4">Add employees to your team</div>
+  <div
+    class="d-flex flex-column flex-lg-row align-items-md-start"
+    aria-live="polite"
+    aria-atomic="true"
+    style="position: relative"
+  >
+    <!-- employees to choose -->
+    <the-employees title="Employees">
+      <template #search>
+        <div class="form-group">
+          <input
+            v-model="search"
+            type="search"
+            class="form-control"
+            placeholder="search by name or job"
+          />
+        </div>
+      </template>
+      <template #default>
+        <team-member
+          v-for="e in employees"
+          @click="selectEmployee(e.id)"
+          :id="e.id"
+          :name="e.name"
+          :job="e.job"
+          :class="{ selectedToMove: e.isSelected }"
+        >
+        </team-member>
+      </template>
+    </the-employees>
+
+    <!-- move buttons -->
+    <div class="d-flex flex-column align-self-center align-items-center m-3">
+      <button
+        @click="moveEmployeeToTeam"
+        id="moveToTeam"
+        ref="moveEmployeeToTeamButton"
+        type="button"
+        class="btn btn-success my-2"
       >
-        <!-- employees to choose -->
-        <the-employees title="Employees">
-          <template #search>
-            <div class="form-group">
-              <input
-                v-model="search"
-                type="search"
-                class="form-control"
-                placeholder="search by name or job"
-              />
-            </div>
-          </template>
-          <template #default>
-            <team-member
-              v-for="e in employees"
-              @click="selectEmployee(e.id)"
-              :id="e.id"
-              :name="e.name"
-              :job="e.job"
-              :class="{ selectedToMove: e.isSelected }"
-            >
-            </team-member>
-          </template>
-        </the-employees>
+        <i class="bi bi-arrow-right" style="font-size: 16px"></i>
+      </button>
+      <button
+        @click="moveTeamMemberToEmployees"
+        id="moveToEmployees"
+        ref="moveTeamMemberToEmployeesButton"
+        type="button"
+        class="btn btn-danger my-2"
+      >
+        <i class="bi bi-arrow-left" style="font-size: 16px"></i>
+      </button>
+    </div>
 
-        <!-- move buttons -->
-        <div
-          class="d-flex flex-column align-self-center align-items-center m-3"
+    <!-- team members -->
+    <the-employees :title="teamName">
+      <template #default>
+        <team-member
+          v-for="m in teamMembers"
+          @click="selectTeamMember(m.id)"
+          :key="m.id"
+          :id="m.id"
+          :name="m.name"
+          :job="m.job"
+          :class="{ selectedToDelete: m.isSelected }"
         >
-          <button
-            @click="moveEmployeeToTeam"
-            id="moveToTeam"
-            ref="moveEmployeeToTeamButton"
-            type="button"
-            class="btn btn-success my-2"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              fill="currentColor"
-              class="bi bi-arrow-right"
-              viewBox="0 0 16 16"
-            >
-              <path
-                fill-rule="evenodd"
-                d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z"
-              />
-            </svg>
-          </button>
-          <button
-            @click="moveTeamMemberToEmployees"
-            id="moveToEmployees"
-            ref="moveTeamMemberToEmployeesButton"
-            type="button"
-            class="btn btn-danger my-2"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              fill="currentColor"
-              class="bi bi-arrow-left"
-              viewBox="0 4 16 16"
-            >
-              <path
-                fill-rule="evenodd"
-                d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"
-              />
-            </svg>
-          </button>
-        </div>
-
-        <!-- team members -->
-        <the-employees :title="teamName">
-          <template #default>
-            <team-member
-              v-for="m in teamMembers"
-              @click="selectTeamMember(m.id)"
-              :key="m.id"
-              :id="m.id"
-              :name="m.name"
-              :job="m.job"
-              :class="{ selectedToDelete: m.isSelected }"
-            >
-            </team-member>
-          </template>
-        </the-employees>
-        <div
-          class="toast hide bg-warning"
-          id="toast"
-          data-delay="2000"
-          style="
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            margin-right: -50%;
-            transform: translate(-50%, -50%);
-          "
-        >
-          <div class="toast-header">
-            <strong class="mr-auto">Information</strong>
-          </div>
-          <div class="toast-body">
-            You cannot remove an employee from a team if he is selected as a
-            project manager or a team leader.
-          </div>
-        </div>
+        </team-member>
+      </template>
+    </the-employees>
+    <div
+      class="toast hide bg-warning"
+      id="toast"
+      data-delay="2000"
+      style="
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        margin-right: -50%;
+        transform: translate(-50%, -50%);
+      "
+    >
+      <div class="toast-header">
+        <strong class="mr-auto">Information</strong>
+      </div>
+      <div class="toast-body">
+        You cannot remove an employee from a team if he is selected as a project
+        manager or a team leader.
       </div>
     </div>
   </div>
@@ -140,7 +110,7 @@
 
 <script>
 import { initializeApp } from "firebase/app";
-import { getDatabase } from "firebase/database";
+import { getDatabase, ref, get, child } from "firebase/database";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBiWEX-ygigO9Kj04kWtjASKLJ3RX20uuM",
@@ -187,54 +157,94 @@ export default {
 
     search(phrase) {
       //gets employees
-      fetch(
-        "https://vue-kanban-5ad84-default-rtdb.europe-west1.firebasedatabase.app/employees.json"
-      )
-        .then((response) => {
-          if (response.ok) {
-            return response.json();
+      get(child(ref(database), "employees"))
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            this.employees = [];
+            for (const id in snapshot.val()) {
+              //gets employees
+              this.employees.push({
+                id: id,
+                name: snapshot.val()[id].name,
+                job: snapshot.val()[id].job,
+                isProjectManager: snapshot.val()[id].isProjectManager,
+                isTeamLeader: snapshot.val()[id].isTeamLeader,
+                isSelected: false,
+                isSelectedAsTeamLeader: false,
+              });
+              //sorts employees by name
+              this.employees.sort(function (a, b) {
+                if (a.name < b.name) {
+                  return -1;
+                }
+                if (a.name > b.name) {
+                  return 1;
+                }
+                return 0;
+              });
+              this.teamMembers.forEach((t) => {
+                while (this.employees.find((e) => e.id === t.id)) {
+                  const index = this.employees.findIndex((e) => e.id === t.id);
+                  this.employees.splice(index, 1);
+                }
+              });
+              this.employees = this.employees.filter(
+                (m) =>
+                  m.name.toLowerCase().includes(phrase.toLowerCase()) ||
+                  m.job.toLowerCase().includes(phrase.toLowerCase())
+              );
+            }
+          } else {
+            console.log("No teams data available");
           }
         })
-        .then((data) => {
-          this.employees = [];
-
-          for (const id in data) {
-            //gets employees
-            this.employees.push({
-              id: id,
-              name: data[id].name,
-              job: data[id].job,
-              isProjectManager: data[id].isProjectManager,
-              isTeamLeader: data[id].isTeamLeader,
-              isSelected: false,
-              isSelectedAsTeamLeader: false,
-            });
-
-            //sorts employees by name
-            this.employees.sort(function (a, b) {
-              if (a.name < b.name) {
-                return -1;
-              }
-              if (a.name > b.name) {
-                return 1;
-              }
-              return 0;
-            });
-
-            this.teamMembers.forEach((t) => {
-              while (this.employees.find((e) => e.id === t.id)) {
-                const index = this.employees.findIndex((e) => e.id === t.id);
-                this.employees.splice(index, 1);
-              }
-            });
-
-            this.employees = this.employees.filter(
-              (m) =>
-                m.name.toLowerCase().includes(phrase.toLowerCase()) ||
-                m.job.toLowerCase().includes(phrase.toLowerCase())
-            );
-          }
+        .catch((error) => {
+          console.error(error);
         });
+      // fetch(
+      //   "https://vue-kanban-5ad84-default-rtdb.europe-west1.firebasedatabase.app/employees.json"
+      // )
+      //   .then((response) => {
+      //     if (response.ok) {
+      //       return response.json();
+      //     }
+      //   })
+      //   .then((data) => {
+      //     this.employees = [];
+      //     for (const id in data) {
+      //       //gets employees
+      //       this.employees.push({
+      //         id: id,
+      //         name: data[id].name,
+      //         job: data[id].job,
+      //         isProjectManager: data[id].isProjectManager,
+      //         isTeamLeader: data[id].isTeamLeader,
+      //         isSelected: false,
+      //         isSelectedAsTeamLeader: false,
+      //       });
+      //       //sorts employees by name
+      //       this.employees.sort(function (a, b) {
+      //         if (a.name < b.name) {
+      //           return -1;
+      //         }
+      //         if (a.name > b.name) {
+      //           return 1;
+      //         }
+      //         return 0;
+      //       });
+      //       this.teamMembers.forEach((t) => {
+      //         while (this.employees.find((e) => e.id === t.id)) {
+      //           const index = this.employees.findIndex((e) => e.id === t.id);
+      //           this.employees.splice(index, 1);
+      //         }
+      //       });
+      //       this.employees = this.employees.filter(
+      //         (m) =>
+      //           m.name.toLowerCase().includes(phrase.toLowerCase()) ||
+      //           m.job.toLowerCase().includes(phrase.toLowerCase())
+      //       );
+      //     }
+      //   });
     },
   },
 

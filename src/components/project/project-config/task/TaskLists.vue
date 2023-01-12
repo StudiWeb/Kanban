@@ -1,38 +1,57 @@
 <template>
-  <div class="col-xl-6 px-0">
-    <div class="h5 my-3">List of tasks</div>
-    <div v-if="tasks.length === 0" class="alert alert-info" role="alert">
-      There are no any tasks.
+  <div class="row mx-0">
+    <div class="col-xl-6 px-0">
+      <div class="d-flex align-items-center">
+        <div class="h5 my-3 mr-2">List of tasks</div>
+        <div v-if="isLoading" class="spinner-border text-primary" role="status">
+          <span class="sr-only">Loading...</span>
+        </div>
+      </div>
     </div>
-    <table v-else class="table table-striped">
-      <thead>
-        <tr>
-          <th scope="col">#</th>
-          <th scope="col">Name</th>
-          <th scope="col">Description</th>
-          <th scope="col">Employees</th>
-          <th scope="col">Start date</th>
-          <th scope="col">End date</th>
-          <th scope="col">Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="(task, index) in tasks">
-          <td>{{ ++index }}</td>
-          <td>{{ task.name }}</td>
-          <td>{{ task.description }}</td>
-          <td>
-            <div v-if="task.employees === 'none'">none</div>
-            <div v-else class="my-1" v-for="e in task.employees" :key="e.id">
-              {{ e.name }} - <span class="font-italic">{{ e.job }}</span>
-            </div>
-          </td>
-          <td>{{ task.startDate }}</td>
-          <td>{{ task.endDate }}</td>
-          <td>{{ task.status }}</td>
-        </tr>
-      </tbody>
-    </table>
+  </div>
+
+  <div v-if="isLoading === false" class="row mx-0">
+    <div class="col-xl-6 px-0">
+      <div
+        v-if="tasks.length === 0"
+        class="d-flex align-items-center alert alert-info"
+        role="alert"
+      >
+        <i class="bi bi-exclamation-octagon mr-2" style="font-size: 24px"></i>
+        <div>There are no any tasks.</div>
+      </div>
+      <table v-else class="table table-striped">
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Name</th>
+            <th scope="col">Description</th>
+            <th scope="col">Employees</th>
+            <th scope="col">Start date</th>
+            <th scope="col">End date</th>
+            <th scope="col">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(task, index) in tasks">
+            <td>{{ ++index }}</td>
+            <td>{{ task.name }}</td>
+            <td>{{ task.description }}</td>
+            <td>
+              <div v-if="task.employees.find((e) => e.name === 'none')">
+                none
+              </div>
+              <div v-else class="my-1" v-for="e in task.employees" :key="e.id">
+                {{ e.name }} - <span class="font-italic">{{ e.job }}</span>
+              </div>
+            </td>
+            <td>{{ task.startDate }}</td>
+            <td>{{ task.endDate }}</td>
+            <td>{{ task.status }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </template>
 
@@ -60,23 +79,42 @@ export default {
   data() {
     return {
       tasks: [],
+      isLoading: false,
     };
   },
 
   mounted() {
-    get(child(ref(database), `projects/${this.selectedProjectId}/tasks`))
-      .then((snapshot) => {
-        if (snapshot.exists()) {
-          for (const id in snapshot.val()) {
-            this.tasks.push(snapshot.val()[id]);
+    this.loadData();
+  },
+
+  methods: {
+    async loadData() {
+      this.isLoading = true;
+      await get(
+        child(ref(database), "projects/" + this.selectedProjectId + "/tasks")
+      )
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            for (const id in snapshot.val()) {
+              this.tasks.push({
+                id: id,
+                name: snapshot.val()[id].name,
+                description: snapshot.val()[id].description,
+                startDate: snapshot.val()[id].startDate,
+                endDate: snapshot.val()[id].endDate,
+                employees: snapshot.val()[id].employees,
+                status: snapshot.val()[id].status,
+              });
+            }
+          } else {
+            console.log("No data available");
           }
-        } else {
-          console.log("No data available");
-        }
-      })
-      .catch((error) => {
-        console.error(error);
-      });
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+      this.isLoading = false;
+    },
   },
 };
 </script>

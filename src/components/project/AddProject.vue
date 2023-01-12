@@ -1,54 +1,63 @@
 <template>
   <section class="row flex-column mx-0">
     <div class="col-xl-6 px-0">
-      <div class="h5 my-4">Create project</div>
-    </div>
-    <div class="col-xl-6 px-0">
-      <div class="form-group">
-        <label>Project name</label>
-        <input
-          v-model="projectName"
-          ref="projectName"
-          type="text"
-          class="form-control"
-          id="projectName"
-        />
-        <div class="invalid-feedback">
-          This project name is already in use. Please type different project
-          name.
+      <div class="d-flex align-items-center">
+        <div class="h5 my-4 mr-2">Add project</div>
+        <div v-if="isLoading" class="spinner-border text-primary" role="status">
+          <span class="sr-only">Loading...</span>
         </div>
       </div>
-      <div class="form-group">
-        <label>Start date</label>
-        <input
-          v-model="startDate"
-          :max="endDate"
-          type="date"
-          class="form-control"
-          id="startDate"
-        />
-      </div>
-      <div class="form-group">
-        <label>End date</label>
-        <input
-          v-model="endDate"
-          :min="startDate"
-          type="date"
-          class="form-control"
-          id="endDate"
-        />
+    </div>
+
+    <div v-if="isLoading === false">
+      <div class="col-xl-6 px-0">
+        <div class="form-group">
+          <label>Project name</label>
+          <input
+            v-model="projectName"
+            ref="projectName"
+            type="text"
+            class="form-control"
+            id="projectName"
+          />
+          <div class="invalid-feedback">
+            This project name is already in use. Please type different project
+            name.
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Start date</label>
+          <input
+            v-model="startDate"
+            :max="endDate"
+            type="date"
+            class="form-control"
+            id="startDate"
+          />
+        </div>
+        <div class="form-group">
+          <label>End date</label>
+          <input
+            v-model="endDate"
+            :min="startDate"
+            type="date"
+            class="form-control"
+            id="endDate"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>My team</label>
+          <select v-model="myTeam" class="form-control">
+            <option value="empty">none</option>
+            <option value="teamList">I choose a team from a team list</option>
+            <option value="newTeam">I want to create a new team</option>
+          </select>
+        </div>
       </div>
 
-      <div class="form-group">
-        <label>My team</label>
-        <select v-model="myTeam" class="form-control">
-          <option value="empty">none</option>
-          <option value="teamList">I choose a team from a team list</option>
-          <option value="newTeam">I want to create a new team</option>
-        </select>
-      </div>
       <!-- choose an existing team -->
-      <div v-if="myTeam === 'teamList'">
+      <div v-if="myTeam === 'teamList'" class="col-xl-6 px-0">
         <div class="form-group">
           <label>Select team</label>
           <select v-model="selectedTeamId" class="form-control" id="team">
@@ -109,60 +118,20 @@
                   <td>{{ member.name }}</td>
                   <td>{{ member.job }}</td>
                   <td class="text-center">
-                    <svg
+                    <i
                       v-if="member.isSelectedAsProjectManager"
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      fill="currentColor"
                       class="bi bi-check"
-                      viewBox="0 0 16 16"
-                    >
-                      <path
-                        d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"
-                      />
-                    </svg>
-                    <svg
-                      v-else
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      fill="currentColor"
-                      class="bi bi-dash"
-                      viewBox="0 0 16 16"
-                    >
-                      <path
-                        d="M4 8a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7A.5.5 0 0 1 4 8z"
-                      />
-                    </svg>
+                      style="font-size: 16px"
+                    ></i>
+                    <i v-else class="bi bi-dash" style="font-size: 16px"></i>
                   </td>
                   <td class="text-center">
-                    <svg
+                    <i
                       v-if="member.isSelectedAsTeamLeader"
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      fill="currentColor"
                       class="bi bi-check"
-                      viewBox="0 0 16 16"
-                    >
-                      <path
-                        d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"
-                      />
-                    </svg>
-                    <svg
-                      v-else
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      fill="currentColor"
-                      class="bi bi-dash"
-                      viewBox="0 0 16 16"
-                    >
-                      <path
-                        d="M4 8a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7A.5.5 0 0 1 4 8z"
-                      />
-                    </svg>
+                      style="font-size: 16px"
+                    ></i>
+                    <i v-else class="bi bi-dash" style="font-size: 16px"></i>
                   </td>
                 </tr>
               </tbody>
@@ -179,36 +148,39 @@
       </div>
       <!-- create a new team -->
       <div v-if="myTeam === 'newTeam'">
-        <div class="form-group">
-          <label>Project manager</label>
-          <select
-            v-model="selectedProjectManagerId"
-            @change="selectProjectManager"
-            ref="projectManagerSelect"
-            class="form-control"
-            id="projectManager"
-          >
-            <option value="empty">none</option>
-            <option v-for="pm in projectManagers" :key="pm.id" :value="pm.id">
-              {{ pm.name }}
-            </option>
-          </select>
+        <div class="col-xl-6 px-0">
+          <div class="form-group">
+            <label>Project manager</label>
+            <select
+              v-model="selectedProjectManagerId"
+              @change="selectProjectManager"
+              ref="projectManagerSelect"
+              class="form-control"
+              id="projectManager"
+            >
+              <option value="empty">none</option>
+              <option v-for="pm in projectManagers" :key="pm.id" :value="pm.id">
+                {{ pm.name }}
+              </option>
+            </select>
+          </div>
+          <div class="px-0 form-group">
+            <label>Team leader</label>
+            <select
+              v-model="selectedTeamLeaderId"
+              @change="selectTeamLeader"
+              id="teamLeader"
+              ref="teamLeaderSelect"
+              class="form-control"
+            >
+              <option value="empty">none</option>
+              <option v-for="tl in teamLeaders" :key="tl.id" :value="tl.id">
+                {{ tl.name }}
+              </option>
+            </select>
+          </div>
         </div>
-        <div class="px-0 form-group">
-          <label>Team leader</label>
-          <select
-            v-model="selectedTeamLeaderId"
-            @change="selectTeamLeader"
-            id="teamLeader"
-            ref="teamLeaderSelect"
-            class="form-control"
-          >
-            <option value="empty">none</option>
-            <option v-for="tl in teamLeaders" :key="tl.id" :value="tl.id">
-              {{ tl.name }}
-            </option>
-          </select>
-        </div>
+
         <CreateTeam
           @set-teamName="setTeamName"
           :employees="employees"
@@ -363,14 +335,55 @@ export default {
       selectedTeamLeaderId: "empty",
       selectedTeamLeader: null,
       teamName: "",
-      projectManagers: [],
-      teamLeaders: [],
       teamMembers: [],
-      projectNames: [],
-      teams: [],
       myTeam: "empty",
       employees: [],
+      teams: [],
+      projects: [],
+      isLoading: false,
     };
+  },
+
+  computed: {
+    projectNames() {
+      let names = [];
+      this.projects.forEach((p) => {
+        names.push(p.name);
+      });
+      return names;
+    },
+
+    projectManagers() {
+      let projectManagers = [];
+      this.employees.forEach((e) => {
+        if (e.isProjectManager) {
+          projectManagers.push(e);
+        }
+      });
+      return projectManagers;
+    },
+
+    teamLeaders() {
+      let teamLeaders = [];
+      this.employees.forEach((e) => {
+        if (e.isTeamLeader) {
+          teamLeaders.push(e);
+        }
+      });
+      return teamLeaders;
+    },
+
+    projectManagerName() {
+      if (this.selectedProjectManager) {
+        return this.selectedProjectManager.name;
+      }
+    },
+
+    teamLeaderName() {
+      if (this.selectedTeamLeader) {
+        return this.selectedTeamLeader.name;
+      }
+    },
   },
 
   watch: {
@@ -473,98 +486,80 @@ export default {
     },
   },
 
-  computed: {
-    projectManagerName() {
-      if (this.selectedProjectManager) {
-        return this.selectedProjectManager.name;
-      }
-    },
-
-    teamLeaderName() {
-      if (this.selectedTeamLeader) {
-        return this.selectedTeamLeader.name;
-      }
-    },
-  },
-
   mounted() {
-    //gets all project managers and team leaders
-    get(child(ref(database), "employees"))
-      .then((snapshot) => {
-        if (snapshot.exists()) {
-          for (const id in snapshot.val()) {
-            this.employees.push({
-              id: id,
-              name: snapshot.val()[id].name,
-              job: snapshot.val()[id].job,
-              isProjectManager: snapshot.val()[id].isProjectManager,
-              isTeamLeader: snapshot.val()[id].isTeamLeader,
-            });
-
-            if (snapshot.val()[id].isProjectManager) {
-              this.projectManagers.push({
-                id: id,
-                name: snapshot.val()[id].name,
-                job: snapshot.val()[id].job,
-                isProjectManager: snapshot.val()[id].isProjectManager,
-                isTeamLeader: snapshot.val()[id].isTeamLeader,
-              });
-            }
-
-            if (snapshot.val()[id].isTeamLeader) {
-              this.teamLeaders.push({
-                id: id,
-                name: snapshot.val()[id].name,
-                job: snapshot.val()[id].job,
-                isProjectManager: snapshot.val()[id].isProjectManager,
-                isTeamLeader: snapshot.val()[id].isTeamLeader,
-              });
-            }
-          }
-        } else {
-          console.log("No employees data available");
-        }
-      })
-      .catch((error) => {
-        console.error(error);
-      });
-
-    //gets all teams
-    get(child(ref(database), "teams"))
-      .then((snapshot) => {
-        if (snapshot.exists()) {
-          for (const id in snapshot.val()) {
-            this.teams.push({
-              id: id,
-              name: snapshot.val()[id].name,
-              members: snapshot.val()[id].members,
-            });
-          }
-        } else {
-          console.log("No teams data available");
-        }
-      })
-      .catch((error) => {
-        console.error(error);
-      });
-
-    //gets all project names in use
-    get(child(ref(database), "projects"))
-      .then((snapshot) => {
-        if (snapshot.exists()) {
-          for (const id in snapshot.val()) {
-            this.projectNames.push(snapshot.val()[id].name);
-          }
-        } else {
-          console.log("No projects data available");
-        }
-      })
-      .catch((error) => {
-        console.error(error);
-      });
+    this.loadData();
   },
 
   methods: {
+    async loadData() {
+      this.isLoading = true;
+      //gets all employees
+      await get(child(ref(database), "employees"))
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            for (const id in snapshot.val()) {
+              this.employees.push({
+                id: id,
+                name: snapshot.val()[id].name,
+                job: snapshot.val()[id].job,
+                isProjectManager: snapshot.val()[id].isProjectManager,
+                isTeamLeader: snapshot.val()[id].isTeamLeader,
+              });
+            }
+          } else {
+            console.log("No data available");
+          }
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+
+      await //gets all teams
+      get(child(ref(database), "teams"))
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            for (const id in snapshot.val()) {
+              this.teams.push({
+                id: id,
+                name: snapshot.val()[id].name,
+                members: snapshot.val()[id].members,
+              });
+            }
+          } else {
+            console.log("No data available");
+          }
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+
+      //gets all projects
+      await get(child(ref(database), "projects"))
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            for (const id in snapshot.val()) {
+              this.projects.push({
+                id: id,
+                name: snapshot.val()[id].name,
+                startDate: snapshot.val()[id].startDate,
+                endDate: snapshot.val()[id].endDate,
+                team: snapshot.val()[id].team,
+                projectManager: snapshot.val()[id].projectManager,
+                teamLeader: snapshot.val()[id].teamLeader,
+                tasks: snapshot.val()[id].tasks,
+              });
+            }
+          } else {
+            console.log("No data available");
+          }
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+
+      this.isLoading = false;
+    },
+
     setTeamName(name) {
       this.teamName = name;
     },
@@ -829,6 +824,7 @@ export default {
     closeResponseServerModal() {
       $("#responseServerModal").modal("hide");
       this.$emit("change-key");
+      this.$parent.$parent.$parent.$emit("change-key");
     },
 
     closeAddProjectModal() {
@@ -872,7 +868,7 @@ export default {
         endDate: this.endDate.trim(),
         projectManager: this.selectedProjectManager,
         teamLeader: this.selectedTeamLeader,
-        isProjectVisible: false,
+        isVisible: true,
       })
         .then(() => {
           // Data saved successfully!

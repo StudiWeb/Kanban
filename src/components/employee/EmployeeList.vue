@@ -1,101 +1,118 @@
 <template>
-    <section class="row mx-0 d-flex flex-column">
-        <div class="col-xl-6 px-0">
-            <div class="h5 my-4">List of employees</div>
+  <section class="row mx-0 d-flex flex-column">
+    <div class="col-xl-6 px-0">
+      <div class="d-flex align-items-center">
+        <div class="h5 my-4 mr-2">List of employees</div>
+        <div v-if="isLoading" class="spinner-border text-primary" role="status">
+          <span class="sr-only">Loading...</span>
         </div>
-        <div v-if="numberOfEmployees === 0" class="d-flex align-items-center alert alert-info col-xl-6" role="alert">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-exclamation-octagon" viewBox="0 0 16 16">
-                <path d="M4.54.146A.5.5 0 0 1 4.893 0h6.214a.5.5 0 0 1 .353.146l4.394 4.394a.5.5 0 0 1 .146.353v6.214a.5.5 0 0 1-.146.353l-4.394 4.394a.5.5 0 0 1-.353.146H4.893a.5.5 0 0 1-.353-.146L.146 11.46A.5.5 0 0 1 0 11.107V4.893a.5.5 0 0 1 .146-.353L4.54.146zM5.1 1 1 5.1v5.8L5.1 15h5.8l4.1-4.1V5.1L10.9 1H5.1z"/>
-                <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995z"/>
-            </svg>
-            <div class="ml-2">There are no any employees.</div>
-        </div>
-        <table v-else class="col-xl-6 table table-striped">
-            <thead>
-                <tr>
-                    <th scope="col">#</th>
-                    <th scope="col">Name</th>
-                    <th scope="col">Job Position</th>
-                    <th scope="col" class="text-center">Project Manager</th>
-                    <th scope="col" class="text-center">Team Leader</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr v-for="(e,index) in employees" :key="e.id">
-                    <td>{{++index}}</td>
-                    <td>{{e.name}}</td>
-                    <td>{{e.job}}</td>
-                    <td class="text-center">
-                        <svg v-if="e.isProjectManager" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check" viewBox="0 0 16 16">
-                            <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>
-                        </svg>
-                        <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-dash" viewBox="0 0 16 16">
-                            <path d="M4 8a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7A.5.5 0 0 1 4 8z"/>
-                        </svg>
-                    </td>
-                    <td class="text-center">
-                        <svg v-if="e.isTeamLeader" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check" viewBox="0 0 16 16">
-                            <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>
-                        </svg>
-                        <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-dash" viewBox="0 0 16 16">
-                            <path d="M4 8a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7A.5.5 0 0 1 4 8z"/>
-                        </svg>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-    </section>
+      </div>
+    </div>
+    <div
+      v-if="numberOfEmployees === 0"
+      class="d-flex align-items-center alert alert-info col-xl-6"
+      role="alert"
+    >
+      <i class="bi bi-exclamation-octagon" style="font-size: 24px"></i>
+      <div class="ml-2">There are no any employees.</div>
+    </div>
+
+    <table
+      v-if="isLoading === false && numberOfEmployees !== 0"
+      class="col-xl-6 table table-striped"
+      id="list"
+    >
+      <thead>
+        <tr>
+          <th scope="col">#</th>
+          <th scope="col">Name</th>
+          <th scope="col">Job Position</th>
+          <th scope="col" class="text-center">Project Manager</th>
+          <th scope="col" class="text-center">Team Leader</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="(e, index) in employees" :key="e.id">
+          <td>{{ ++index }}</td>
+          <td>{{ e.name }}</td>
+          <td>{{ e.job }}</td>
+          <td class="text-center">
+            <i v-if="e.isProjectManager" class="bi bi-check"></i>
+            <i v-else class="bi bi-dash"></i>
+          </td>
+          <td class="text-center">
+            <i v-if="e.isTeamLeader" class="bi bi-check"></i>
+            <i v-else class="bi bi-dash"></i>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
 </template>
 
 <script>
-
 import { initializeApp } from "firebase/app";
-import { getDatabase ,get, child, ref } from "firebase/database";
+import { getDatabase, get, child, ref } from "firebase/database";
 
 const firebaseConfig = {
-    apiKey: "AIzaSyBiWEX-ygigO9Kj04kWtjASKLJ3RX20uuM",
-    authDomain: "vue-kanban-5ad84.firebaseapp.com",
-    databaseURL: "https://vue-kanban-5ad84-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "vue-kanban-5ad84",
-    storageBucket: "vue-kanban-5ad84.appspot.com",
-    messagingSenderId: "538900623860",
-    appId: "1:538900623860:web:330924a5a67488f22109a1"
+  apiKey: "AIzaSyBiWEX-ygigO9Kj04kWtjASKLJ3RX20uuM",
+  authDomain: "vue-kanban-5ad84.firebaseapp.com",
+  databaseURL:
+    "https://vue-kanban-5ad84-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "vue-kanban-5ad84",
+  storageBucket: "vue-kanban-5ad84.appspot.com",
+  messagingSenderId: "538900623860",
+  appId: "1:538900623860:web:330924a5a67488f22109a1",
 };
 
 const firebase = initializeApp(firebaseConfig);
 const database = getDatabase(firebase);
 
 export default {
+  data() {
+    return {
+      employees: [],
+      isLoading: false,
+    };
+  },
 
-    data() {
-        return {
-            employees: [],
-            numberOfEmployees: 0
-        }
+  computed: {
+    numberOfEmployees() {
+      if (this.employees) {
+        return this.employees.length;
+      }
     },
+  },
 
-    mounted() {
-        //gets all employees
-        get(child(ref(database), 'employees')).then((snapshot) => {
-            if (snapshot.exists()) {
-                for (const id in snapshot.val()) {
-                    this.employees.push({
-                        id: id,
-                        name: snapshot.val()[id].name,
-                        job: snapshot.val()[id].job,
-                        isProjectManager: snapshot.val()[id].isProjectManager,
-                        isTeamLeader: snapshot.val()[id].isTeamLeader,
-                    });
-                }
+  mounted() {
+    this.loadEmployees();
+  },
 
-                this.numberOfEmployees = this.employees.length;
-            } else {
-                console.log("No employees data available");
+  methods: {
+    async loadEmployees() {
+      this.isLoading = true;
+      //gets all employees
+      await get(child(ref(database), "employees"))
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            for (const id in snapshot.val()) {
+              this.employees.push({
+                id: id,
+                name: snapshot.val()[id].name,
+                job: snapshot.val()[id].job,
+                isProjectManager: snapshot.val()[id].isProjectManager,
+                isTeamLeader: snapshot.val()[id].isTeamLeader,
+              });
             }
-        }).catch((error) => {
-            console.error(error);
+          } else {
+            console.log("No data available");
+          }
+        })
+        .catch((error) => {
+          console.error(error);
         });
-    } 
-}
-
+      this.isLoading = false;
+    },
+  },
+};
 </script>

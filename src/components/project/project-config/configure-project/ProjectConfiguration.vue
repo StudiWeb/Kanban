@@ -1,33 +1,46 @@
 <template>
-  <div class="col-xl-6 px-0">
-    <div class="card">
-      <div class="card-body">
-        <p class="card-text">Do you want to make this project visible?</p>
-        <div>
-          <div class="form-check form-check-inline">
-            <input
-              v-model="isProjectVisible"
-              class="form-check-input"
-              type="radio"
-              id="yes"
-              value="yes"
-            />
-            <label class="form-check-label" for="yes">Yes</label>
-          </div>
-          <div class="form-check form-check-inline">
-            <input
-              v-model="isProjectVisible"
-              class="form-check-input"
-              type="radio"
-              id="no"
-              value="no"
-            />
-            <label class="form-check-label" for="no">No</label>
-          </div>
+  <div class="row mx-0">
+    <div class="col-xl-6 px-0">
+      <div class="d-flex align-items-center">
+        <div class="h5 my-4 mr-2">List of projects</div>
+        <div v-if="isLoading" class="spinner-border text-primary" role="status">
+          <span class="sr-only">Loading...</span>
         </div>
-        <button @click="changeIsProjectVisible" class="mt-3 btn btn-primary">
-          Confirm
-        </button>
+      </div>
+    </div>
+  </div>
+
+  <div v-if="isLoading === false" class="row mx-0">
+    <div class="col-xl-6 px-0">
+      <div class="card">
+        <div class="card-body">
+          <p class="card-text">Do you want to make this project visible?</p>
+          <div>
+            <div class="form-check form-check-inline">
+              <input
+                v-model="isProjectVisible"
+                class="form-check-input"
+                type="radio"
+                id="yes"
+                value="yes"
+              />
+              <label class="form-check-label" for="yes">Yes</label>
+            </div>
+            <div class="form-check form-check-inline">
+              <input
+                v-model="isProjectVisible"
+                class="form-check-input"
+                type="radio"
+                id="no"
+                value="no"
+              />
+              <label class="form-check-label" for="no">No</label>
+            </div>
+          </div>
+          <button @click="changeIsProjectVisible" class="mt-3 btn btn-primary">
+            Confirm
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -74,30 +87,37 @@ export default {
     return {
       isProjectVisible: "",
       serverResponse: "",
+      isLoading: false,
     };
   },
 
   mounted() {
-    get(child(ref(database), "projects/" + this.selectedProjectId))
-      .then((snapshot) => {
-        if (snapshot.exists()) {
-          if (snapshot.val().isProjectVisible === true) {
-            this.isProjectVisible = "yes";
-          }
-
-          if (snapshot.val().isProjectVisible === false) {
-            this.isProjectVisible = "no";
-          }
-        } else {
-          console.log("No data available");
-        }
-      })
-      .catch((error) => {
-        console.error(error);
-      });
+    this.loadData();
   },
 
   methods: {
+    async loadData() {
+      this.isLoading = true;
+      await get(child(ref(database), "projects/" + this.selectedProjectId))
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            if (snapshot.val().isVisible === true) {
+              this.isProjectVisible = "yes";
+            }
+
+            if (snapshot.val().isVisible === false) {
+              this.isProjectVisible = "no";
+            }
+          } else {
+            console.log("No data available");
+          }
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+      this.isLoading = false;
+    },
+
     openServerResponseModal() {
       $("#serverResponseModal").modal("show");
     },
@@ -105,12 +125,13 @@ export default {
     closeServerResponseModal() {
       $("#serverResponseModal").modal("hide");
       this.$emit("change-key");
+      this.$parent.$parent.$parent.$parent.$emit("change-key");
     },
 
     changeIsProjectVisible() {
       if (this.isProjectVisible === "yes") {
         update(ref(database, "projects/" + this.selectedProjectId), {
-          isProjectVisible: true,
+          isVisible: true,
         })
           .then(() => {
             // Data saved successfully!
@@ -124,7 +145,7 @@ export default {
           });
       } else {
         update(ref(database, "projects/" + this.selectedProjectId), {
-          isProjectVisible: false,
+          isVisible: false,
         })
           .then(() => {
             // Data saved successfully!
