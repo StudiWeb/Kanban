@@ -1,6 +1,9 @@
 <template>
   <li>
-    <router-link class="nav-link" :to="'/' + page">{{ title }}</router-link>
+    <router-link class="nav-link d-flex align-items-center" :to="'/' + page">
+      <slot name="icon"></slot>
+      <span class="ml-2">{{ title }}</span>
+    </router-link>
   </li>
 </template>
 

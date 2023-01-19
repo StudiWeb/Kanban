@@ -27,34 +27,105 @@
             <th scope="col">#</th>
             <th scope="col">Project name</th>
             <th scope="col">Project manager</th>
-            <th scope="col">Team</th>
-            <th scope="col">Start date</th>
-            <th scope="col">End date</th>
+            <th scope="col">Team leader</th>
+            <th scope="col" class="text-center">See details</th>
           </tr>
         </thead>
         <tbody>
           <tr
             v-for="(p, index) in projects"
             :key="p.id"
-            @mouseover="showTooltip(p.id)"
-            class="project"
-            rel="tooltip"
-            data-html="true"
-            data-toggle="tooltip"
-            data-placement="bottom"
-            :title="tooltip"
+            style="line-height: 32px"
           >
             <td>{{ ++index }}</td>
             <td>{{ p.name }}</td>
             <td>{{ p.projectManager.name }}</td>
-            <td>{{ p.team.name }}</td>
-            <td>{{ p.startDate }}</td>
-            <td>{{ p.endDate }}</td>
+            <td>{{ p.teamLeader.name }}</td>
+            <td class="text-center">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                @click="seeProjectDetails(p)"
+              >
+                <i class="bi bi-eye"></i>
+              </button>
+            </td>
           </tr>
         </tbody>
       </table>
     </div>
   </section>
+
+  <teleport to="body">
+    <div class="modal fade" id="projectModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">{{ name }}</h5>
+            <button
+              type="button"
+              class="close"
+              data-dismiss="modal"
+              aria-label="Close"
+            >
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <div class="row">
+              <div class="col-6">
+                <div class="font-weight-bold">Project manager</div>
+                <div>{{ projectManager }}</div>
+              </div>
+              <div>
+                <div class="font-weight-bold">Team leader</div>
+                <div>{{ teamLeader }}</div>
+              </div>
+            </div>
+
+            <div class="row my-2">
+              <div class="col-6">
+                <div class="font-weight-bold">Start date</div>
+                <div>{{ startDate }}</div>
+              </div>
+              <div>
+                <div class="font-weight-bold">End date</div>
+                <div>{{ endDate }}</div>
+              </div>
+            </div>
+
+            <div class="font-weight-bold mb-2">Team members</div>
+
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th scope="col">#</th>
+                  <th scope="col">Name</th>
+                  <th scope="col">Job</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(member, index) in team">
+                  <td>{{ ++index }}</td>
+                  <td>{{ member.name }}</td>
+                  <td>{{ member.job }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              @click="closeProjectModal"
+              class="btn btn-primary"
+            >
+              Ok
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </teleport>
 </template>
 
 <script>
@@ -81,6 +152,12 @@ export default {
       projects: [],
       tooltip: "",
       isLoading: false,
+      name: "",
+      projectManager: null,
+      teamLeader: null,
+      team: [],
+      startDate: "",
+      endDate: "",
     };
   },
 
@@ -132,36 +209,19 @@ export default {
       this.isLoading = false;
     },
 
-    showTooltip(projectId) {
-      if (this.projects.length > 0) {
-        this.tooltip = '<div class="font-weight-bold">Project members</div>';
-        const members = this.projects.find(
-          (project) => project.id === projectId
-        ).team.members;
-        members.forEach((m) => {
-          let job = m.isSelectedAsProjectManager
-            ? m.job + ' <span class="font-weight-bold">' + "(PM) " + "</span>"
-            : m.job;
-          job += m.isSelectedAsTeamLeader
-            ? '<span class="font-weight-bold">' + "(TL) " + "</span>"
-            : "";
-          this.tooltip +=
-            '<div class="my-2">' +
-            m.name +
-            " - " +
-            "<span>" +
-            job +
-            "</span>" +
-            "</div>";
-        });
-      }
+    seeProjectDetails(project) {
+      this.name = project.name;
+      this.projectManager = project.projectManager.name;
+      this.teamLeader = project.teamLeader.name;
+      this.team = project.team.members;
+      this.startDate = project.startDate;
+      this.endDate = project.endDate;
+      $("#projectModal").modal("show");
+    },
+
+    closeProjectModal() {
+      $("#projectModal").modal("hide");
     },
   },
 };
 </script>
-
-<style scoped>
-.project:hover {
-  cursor: pointer;
-}
-</style>

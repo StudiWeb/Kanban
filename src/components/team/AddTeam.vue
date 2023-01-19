@@ -1,35 +1,18 @@
 <template>
   <section>
-    <div class="col-xl-6 px-0">
-      <div class="d-flex align-items-center">
-        <div class="h5 my-4 mr-2">Add team</div>
-        <div v-if="isLoading" class="spinner-border text-primary" role="status">
-          <span class="sr-only">Loading...</span>
-        </div>
-      </div>
-    </div>
-
-    <create-team
-      v-if="isLoading === false"
-      @open-modal="openModal"
-      @change-key="changeKey"
-      :key="componentKey"
-      :employees="employees"
-      :teams="teams"
-      :componentName="componentName"
-    >
-    </create-team>
+    <create-team @open-modal="openModal"> </create-team>
   </section>
 
   <teleport to="body">
     <base-modal id="addTeamModal">
       <template #header>Create team</template>
       <template #body>
+        <div class="mb-2">
+          <div class="font-weight-bold">Team name</div>
+          <div>{{ teamName }}</div>
+        </div>
         <div>
-          <p>
-            <span class="font-weight-bold">Team name: </span> {{ teamName }}
-          </p>
-          <p><span class="font-weight-bold">Team members</span></p>
+          <div class="font-weight-bold mb-2">Team members</div>
           <table class="table table-striped">
             <thead>
               <th>Name</th>
@@ -116,94 +99,31 @@ export default {
 
   data() {
     return {
-      componentName: "AddTeam",
       teamName: "",
       teamMembers: [],
       componentKey: 0,
       validationAddTeamModalMesseage: "",
-      isLoading: false,
-      employees: [],
-      teams: [],
     };
   },
 
-  computed: {
-    teamNames() {
-      let names = [];
-      this.teams.forEach((t) => {
-        names.push(t.name);
-      });
-      return names;
-    },
-  },
-
-  mounted() {
-    this.loadData();
-  },
+  computed: {},
 
   methods: {
-    async loadData() {
-      this.isLoading = true;
-      //gets all employees
-      await get(child(ref(database), "employees"))
-        .then((snapshot) => {
-          if (snapshot.exists()) {
-            for (const id in snapshot.val()) {
-              this.employees.push({
-                id: id,
-                name: snapshot.val()[id].name,
-                job: snapshot.val()[id].job,
-                isProjectManager: snapshot.val()[id].isProjectManager,
-                isTeamLeader: snapshot.val()[id].isTeamLeader,
-              });
-            }
-          } else {
-            console.log("No data available");
-          }
-        })
-        .catch((error) => {
-          console.error(error);
-        });
-
-      await //gets all teams
-      get(child(ref(database), "teams"))
-        .then((snapshot) => {
-          if (snapshot.exists()) {
-            for (const id in snapshot.val()) {
-              this.teams.push({
-                id: id,
-                name: snapshot.val()[id].name,
-                members: snapshot.val()[id].members,
-              });
-            }
-          } else {
-            console.log("No data available");
-          }
-        })
-        .catch((error) => {
-          console.error(error);
-        });
-
-      this.isLoading = false;
-    },
-
-    openModal(name, members) {
+    openModal(name, teamNames, members) {
       if (name === "") {
         this.validationAddTeamModalMesseage = "Your teams needs a name.";
         $("#validationAddTeamModal").modal("show");
-      } else if (name === "") {
-        this.validationAddTeamModalMesseage = "Please enter a team name.";
-        $("#validationAddTeamModal").modal("show");
-      } else if (this.teamNames.find((teamName) => teamName === name)) {
+      } else if (teamNames.find((teamName) => teamName === name)) {
         this.validationAddTeamModalMesseage =
-          "This team name is already used. Please type different team name.";
+          "This name is already used. Please type different team name.";
+        $("#validationAddTeamModal").modal("show");
+      } else if (members.length === 0) {
+        this.validationAddTeamModalMesseage =
+          "Your team needs at least one employee.";
         $("#validationAddTeamModal").modal("show");
       } else {
         this.teamName = name;
         this.teamMembers = members;
-        this.teamMembers.forEach((m) => {
-          delete m.isSelected;
-        });
         $("#addTeamModal").modal("show");
       }
     },
@@ -218,11 +138,7 @@ export default {
 
     closeServerResponseModal() {
       $("#serverResponseModal").modal("hide");
-      this.componentKey += 1;
-    },
-
-    changeKey() {
-      this.componentKey += 1;
+      this.$emit("change-key");
     },
 
     addTeam() {

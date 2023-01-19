@@ -12,14 +12,22 @@
       <div class="col-xl-6">
         <div class="form-group">
           <label>Select team</label>
-          <select @change="selectTeam" v-model="teamId" class="form-control">
+          <select v-model="teamId" class="form-control">
             <option value="empty">none</option>
             <option v-for="team in teams" :key="team.id" :value="team.id">
               {{ team.name }}
             </option>
           </select>
         </div>
-        <div class="card" v-if="selectedTeam">
+        <div
+          v-if="takesPartInProject"
+          class="d-flex align-items-center alert alert-info"
+          role="alert"
+        >
+          <i class="bi bi-exclamation-octagon mr-2" style="font-size: 24px"></i>
+          <div>This team takes part in a project. You cannot delete it.</div>
+        </div>
+        <div v-show="teamId !== 'empty'" class="card">
           <div class="card-header h5">{{ teamName }}</div>
           <div class="card-body d-flex flex-column">
             <h5 class="card-title mt-2 mb-4">Team members</h5>
@@ -29,7 +37,7 @@
                 <th class="col-4">Job position</th>
               </thead>
               <tbody>
-                <tr v-for="member in selectedTeam.members" :key="member.id">
+                <tr v-for="member in teamMembers" :key="member.id">
                   <td>{{ member.name }}</td>
                   <td>{{ member.job }}</td>
                 </tr>
@@ -38,6 +46,7 @@
             <button
               @click="openModal"
               class="btn btn-danger mr-4 align-self-end"
+              ref="deleteProject"
             >
               Delete team
             </button>
@@ -120,12 +129,12 @@ export default {
 
   data() {
     return {
-      teamId: "",
+      teamId: "empty",
       selectedTeam: null,
-      canDeleteTeam: false,
       teams: [],
       projects: [],
       isLoading: false,
+      takesPartInProject: false,
     };
   },
 
@@ -144,7 +153,26 @@ export default {
   },
 
   watch: {
-    selectedTeamId(id) {},
+    teamId(id) {
+      if (id !== "empty") {
+        this.selectedTeam = this.teams.find((t) => t.id === id);
+        this.takesPartInProject = false;
+
+        if (this.$refs.deleteProject) {
+          this.$refs.deleteProject.disabled = false;
+        }
+        this.projects.forEach((p) => {
+          if (p.team.id === id) {
+            this.takesPartInProject = true;
+            if (this.$refs.deleteProject) {
+              this.$refs.deleteProject.disabled = true;
+            }
+          }
+        });
+      } else {
+        this.selectedTeam = null;
+      }
+    },
   },
   mounted() {
     this.loadData();
@@ -212,28 +240,10 @@ export default {
       this.$emit("change-key");
     },
 
-    selectTeam() {
-      if (this.teamId !== "empty") {
-        this.selectedTeam = this.teams.find((t) => t.id === this.teamId);
-      } else {
-        this.selectedTeam = null;
-      }
-    },
-
     deleteTeam() {
-      this.canDeleteTeam = true;
-      this.projects.forEach((p) => {
-        if (p.team.id === this.selectedTeam.id) {
-          this.canDeleteTeam = false;
-        }
-      });
-
-      if (this.canDeleteTeam) {
-        set(ref(database, "teams/" + this.selectedTeam.id), null);
-
-        $("#deleteTeamModal").modal("hide");
-        $("#serverResponseModal").modal("show");
-      }
+      set(ref(database, "teams/" + this.selectedTeam.id), null);
+      $("#deleteTeamModal").modal("hide");
+      $("#serverResponseModal").modal("show");
     },
   },
 };

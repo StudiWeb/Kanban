@@ -30,7 +30,7 @@
           ></i>
           <i v-else class="bi bi-caret-up-fill"></i>
         </button>
-        <p v-if="showTaskDescription" class="col-12 my-1">
+        <p v-if="showTaskDescription" class="border p-2 col-12 my-2">
           {{ description }}
         </p>
       </div>

@@ -1,5 +1,5 @@
 <template>
-  <div class="card" style="min-height: 480px; max-height: 640px">
+  <div class="card m-2" style="height: 500px; width: 300px">
     <div class="card-header h5 text-center text-uppercase">{{ title }}</div>
     <div class="card-body d-flex flex-column align-items-center">
       <slot name="tasks"></slot>
@@ -70,5 +70,6 @@ export default {
 
 .card-body {
   overflow-y: scroll;
+  overflow-x: none;
 }
 </style>

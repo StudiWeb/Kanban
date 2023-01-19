@@ -3,7 +3,6 @@
     <h5 class="card-header text-center">{{ title }}</h5>
     <div class="card-body">
       <slot name="search"></slot>
-      <slot name="managers"></slot>
       <table class="table">
         <thead>
           <tr>

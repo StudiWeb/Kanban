@@ -1,76 +1,111 @@
 <template>
-  <div class="jumbotron">
-    <h1 class="display-4 text-center">{{ projectName }}</h1>
+  <!-- spinner -->
+  <teleport to="body">
+    <div
+      v-if="isLoading"
+      style="
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        margin-right: -50%;
+        transform: translate(-50%, -50%);
+        z-index: 9999;
+      "
+    >
+      <div class="spinner-grow text-primary mr-2" role="status">
+        <span class="sr-only">Loading...</span>
+      </div>
+      <div class="spinner-grow text-primary mr-2" role="status">
+        <span class="sr-only">Loading...</span>
+      </div>
+      <div class="spinner-grow text-primary mr-2" role="status">
+        <span class="sr-only">Loading...</span>
+      </div>
+      <div class="spinner-grow text-primary mr-2" role="status">
+        <span class="sr-only">Loading...</span>
+      </div>
+      <div class="spinner-grow text-primary mr-2" role="status">
+        <span class="sr-only">Loading...</span>
+      </div>
+    </div>
+  </teleport>
+
+  <div v-if="isLoading === false">
+    <div class="row">
+      <div class="jumbotron w-100">
+        <h1 class="display-4 text-center">{{ projectName }}</h1>
+      </div>
+    </div>
+
+    <section class="row d-flex justify-content-around">
+      <the-card title="To Do" type="todo" style="position: relative">
+        <template #tasks>
+          <TheTask
+            v-for="t in toDoTasks"
+            :key="t.id"
+            :taskId="t.id"
+            :projectId="projectId"
+            @open-modal="openModal"
+          />
+        </template>
+      </the-card>
+      <the-card title="Doing" type="doing">
+        <template #tasks>
+          <TheTask
+            v-for="t in doingTasks"
+            :key="t.id"
+            :taskId="t.id"
+            :projectId="projectId"
+            @open-modal="openModal"
+          />
+        </template>
+      </the-card>
+      <the-card title="Testing" type="testing">
+        <template #tasks>
+          <TheTask
+            v-for="t in testingTasks"
+            :key="t.id"
+            :taskId="t.id"
+            :projectId="projectId"
+            @open-modal="openModal"
+          />
+        </template>
+      </the-card>
+      <the-card title="Done" type="done">
+        <template #tasks>
+          <TheTask
+            v-for="t in doneTasks"
+            :key="t.id"
+            :taskId="t.id"
+            :projectId="projectId"
+            @open-modal="openModal"
+          />
+        </template>
+      </the-card>
+    </section>
   </div>
 
-  <section class="mt-5 d-flex justify-content-around">
-    <the-card title="To Do" type="todo" style="position: relative">
-      <template #tasks>
-        <TheTask
-          v-for="t in toDoTasks"
-          :key="t.id"
-          :taskId="t.id"
-          :projectId="projectId"
-          @open-modal="openModal"
-        />
-      </template>
-    </the-card>
-    <the-card title="Doing" type="doing">
-      <template #tasks>
-        <TheTask
-          v-for="t in doingTasks"
-          :key="t.id"
-          :taskId="t.id"
-          :projectId="projectId"
-          @open-modal="openModal"
-        />
-      </template>
-    </the-card>
-    <the-card title="Testing" type="testing">
-      <template #tasks>
-        <TheTask
-          v-for="t in testingTasks"
-          :key="t.id"
-          :taskId="t.id"
-          :projectId="projectId"
-          @open-modal="openModal"
-        />
-      </template>
-    </the-card>
-    <the-card title="Done" type="done">
-      <template #tasks>
-        <TheTask
-          v-for="t in doneTasks"
-          :key="t.id"
-          :taskId="t.id"
-          :projectId="projectId"
-          @open-modal="openModal"
-        />
-      </template>
-    </the-card>
-
-    <teleport to="body">
-      <div
-        class="toast hide bg-warning"
-        id="toast"
-        data-delay="4000"
-        style="
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          -webkit-transform: translate(-50%, -50%);
-          transform: translate(-50%, -50%);
-        "
-      >
-        <div class="toast-header">
-          <strong class="mr-auto">Information</strong>
-        </div>
-        <div class="toast-body">
-          You cannot move a task that does not have an assigned employee to it.
-        </div>
+  <teleport to="body">
+    <div
+      class="toast hide bg-warning"
+      id="toast"
+      data-delay="4000"
+      style="
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        -webkit-transform: translate(-50%, -50%);
+        transform: translate(-50%, -50%);
+      "
+    >
+      <div class="toast-header">
+        <strong class="mr-auto">Information</strong>
       </div>
-    </teleport>
-  </section>
+      <div class="toast-body">
+        You cannot move a task that does not have an assigned employee to it.
+      </div>
+    </div>
+  </teleport>
 
   <teleport to="body">
     <base-modal id="moveTaskModal">
@@ -170,6 +205,7 @@ export default {
       projectId: "",
       project: null,
       tasks: [],
+      isLoading: false,
     };
   },
 
@@ -274,32 +310,37 @@ export default {
   },
 
   mounted() {
-    this.projectId = this.$route.params.id;
-
-    get(child(ref(database), `projects/${this.projectId}`))
-      .then((snapshot) => {
-        if (snapshot.exists()) {
-          this.project = {
-            id: this.projectId,
-            name: snapshot.val().name,
-            startDate: snapshot.val().startDate,
-            endDate: snapshot.val().endDate,
-            projectManager: snapshot.val().projectManager,
-            teamLeader: snapshot.val().teamLeader,
-            team: snapshot.val().team,
-            tasks: snapshot.val().tasks,
-            isProjectVisible: snapshot.val().isProjectVisible,
-          };
-        } else {
-          console.log("No data available");
-        }
-      })
-      .catch((error) => {
-        console.error(error);
-      });
+    this.loadData();
   },
 
   methods: {
+    async loadData() {
+      this.isLoading = true;
+      this.projectId = this.$route.params.id;
+      await get(child(ref(database), `projects/${this.projectId}`))
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            this.project = {
+              id: this.projectId,
+              name: snapshot.val().name,
+              startDate: snapshot.val().startDate,
+              endDate: snapshot.val().endDate,
+              projectManager: snapshot.val().projectManager,
+              teamLeader: snapshot.val().teamLeader,
+              team: snapshot.val().team,
+              tasks: snapshot.val().tasks,
+              isProjectVisible: snapshot.val().isProjectVisible,
+            };
+          } else {
+            console.log("No data available");
+          }
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+      this.isLoading = false;
+    },
+
     openModal(id, name, startDate, endDate, description, employees, status) {
       this.taskId = id;
       this.name = name;
@@ -358,7 +399,6 @@ export default {
     },
     moveTaskToRight() {
       if (this.status === "todo") {
-        console.log(this.employees.find((e) => e.name === "none"));
         if (this.employees.find((e) => e.name === "none")) {
           $("#moveTaskModal").modal("hide");
           $("#toast").toast("show");

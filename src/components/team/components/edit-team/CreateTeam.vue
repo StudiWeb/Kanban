@@ -34,14 +34,14 @@
             aria-describedby="invalidTeamName"
             ref="teamNameInput"
             type="text"
+            disabled
           />
-          <div
-            v-if="teamNameExists"
-            id="invalidTeamName"
-            class="invalid-feedback"
-          >
+          <div v-if="teamNameExists" class="invalid-feedback">
             There is already a team wtih this name. Please type different team
             name.
+          </div>
+          <div v-if="emptyName" class="invalid-feedback">
+            Team name cannot be empty string.
           </div>
         </div>
       </div>
@@ -82,6 +82,7 @@
           ref="moveEmployeeToTeamButton"
           type="button"
           class="btn btn-success my-2"
+          disabled
         >
           <i class="bi bi-arrow-right" style="font-size: 16px"></i>
         </button>
@@ -91,6 +92,7 @@
           ref="moveTeamMemberToEmployeesButton"
           type="button"
           class="btn btn-danger my-2"
+          disabled
         >
           <i class="bi bi-arrow-left" style="font-size: 16px"></i>
         </button>
@@ -120,6 +122,20 @@
       Edit team
     </button>
   </div>
+
+  <teleport to="body">
+    <base-modal id="validationEditTeamModal">
+      <template #header>Edit team</template>
+      <template #body>{{ validationEditTeamModalMessage }}</template>
+      <template #footer>
+        <div class="d-flex justify-content-end">
+          <button @click="closeValidationEditTeamModal" class="btn btn-primary">
+            Ok
+          </button>
+        </div>
+      </template>
+    </base-modal>
+  </teleport>
 </template>
 
 <script>
@@ -164,65 +180,55 @@ export default {
       teamMembers: [],
       moveEmployeeToTeamButton: null,
       moveTeamMemberToEmployeesButton: null,
-      teamNameExists: false,
+
       search: "",
       employees: [],
       teams: [],
       selectedTeamId: "empty",
       isLoading: false,
+      emptyName: false,
+      teamNameExists: false,
+      validationEditTeamModalMessage: "",
     };
   },
 
   watch: {
     enteredTeamName(name) {
-      if (this.componentName === "AddTeam") {
-        if (name === "") {
-          this.teamNameExists = false;
-          $("#teamName").removeClass("is-valid");
-          $("#teamName").addClass("is-invalid");
-        } else if (this.teams.find((team) => team.name === name)) {
-          this.teamNameExists = true;
-          $("#teamName").removeClass("is-valid");
-          $("#teamName").addClass("is-invalid");
-        } else {
-          this.teamNameExists = false;
-          $("#teamName").removeClass("is-invalid");
-          $("#teamName").addClass("is-valid");
-        }
-      }
-
-      if (this.componentName === "EditTeam") {
-        if (name === "") {
-          this.teamNameExists = false;
-          $("#teamName").removeClass("is-valid");
-          $("#teamName").addClass("is-invalid");
-        } else if (this.teamNames.find((team) => team.name === name)) {
-          this.teamNameExists = true;
-          $("#teamName").removeClass("is-valid");
-          $("#teamName").addClass("is-invalid");
-        } else {
-          this.teamNameExists = false;
-          $("#teamName").removeClass("is-invalid");
-          $("#teamName").addClass("is-valid");
-        }
+      if (name === "") {
+        this.emptyName = true;
+        $("#teamName").removeClass("is-valid");
+        $("#teamName").addClass("is-invalid");
+      } else if (this.teamNames.find((n) => n === name)) {
+        this.teamNameExists = true;
+        $("#teamName").removeClass("is-valid");
+        $("#teamName").addClass("is-invalid");
+      } else {
+        this.emptyName = false;
+        this.teamNameExists = false;
+        $("#teamName").removeClass("is-invalid");
+        $("#teamName").addClass("is-valid");
       }
     },
 
     selectedTeamId(id) {
       if (id !== "empty") {
-        $("#teamName").removeClass("is-invalid");
-        $("#teamName").addClass("is-valid");
-
         this.$refs.teamNameInput.disabled = false;
+        this.$refs.moveEmployeeToTeamButton.disabled = false;
+        this.$refs.moveTeamMemberToEmployeesButton.disabled = false;
 
         this.selectedTeam = this.teams.find((team) => team.id === id);
-        this.teamNames = this.teams.filter(
-          (team) => team.name !== this.selectedTeam.name
-        );
+        this.teamNames = [];
+        this.teams.forEach((t) => {
+          if (t.id !== id) {
+            this.teamNames.push(t.name);
+          }
+        });
 
         if (this.selectedTeam) {
           this.enteredTeamName = this.selectedTeam.name;
-          this.teamMembers = this.selectedTeam.members;
+          this.teamMembers = this.selectedTeam.members.sort((a, b) =>
+            a.name.localeCompare(b.name)
+          );
         }
 
         this.employees = [];
@@ -319,13 +325,6 @@ export default {
   },
 
   mounted() {
-    //disables team name input
-    this.$refs.teamNameInput.disabled = true;
-
-    //disables buttons that moves employees
-    this.$refs.moveEmployeeToTeamButton.disabled = true;
-    this.$refs.moveTeamMemberToEmployeesButton.disabled = true;
-
     this.loadData();
   },
 
@@ -376,13 +375,55 @@ export default {
       this.isLoading = false;
     },
 
-    openModal() {
-      this.$emit(
-        "open-modal",
-        this.enteredTeamName,
-        this.teamMembers,
-        this.selectedTeamId
-      );
+    async openModal() {
+      //removes unnecessary property
+      this.teamMembers.forEach((m) => {
+        delete m.isSelected;
+      });
+
+      if (this.selectedTeamId === "empty") {
+        this.validationEditTeamModalMessage =
+          "Please select a team from the list.";
+        $("#validationEditTeamModal").modal("show");
+      } else {
+        await get(child(ref(database), "teams/" + this.selectedTeamId))
+          .then((snapshot) => {
+            if (snapshot.exists()) {
+              const name = snapshot.val().name;
+              const team = snapshot.val().members;
+              team.sort((a, b) => a.name.localeCompare(b.name));
+              this.teamMembers.sort((a, b) => a.name.localeCompare(b.name));
+
+              if (
+                JSON.stringify(team) === JSON.stringify(this.teamMembers) &&
+                name === this.enteredTeamName
+              ) {
+                this.validationEditTeamModalMessage =
+                  "You must enter any change in the team to edit it.";
+                $("#validationEditTeamModal").modal("show");
+              } else {
+                this.$emit(
+                  "open-modal",
+                  this.enteredTeamName,
+                  this.teamMembers,
+                  this.selectedTeamId
+                );
+              }
+            } else {
+              console.log("No data available");
+            }
+          })
+          .catch((error) => {
+            console.error(error);
+          });
+      }
+
+      this.$refs.moveEmployeeToTeamButton.disabled = true;
+      this.$refs.moveTeamMemberToEmployeesButton.disabled = true;
+    },
+
+    closeValidationEditTeamModal() {
+      $("#validationEditTeamModal").modal("hide");
     },
 
     setTeamName(e) {
@@ -477,6 +518,7 @@ export default {
       });
 
       this.$refs.moveEmployeeToTeamButton.disabled = true;
+      this.teamMembers.sort((a, b) => a.name.localeCompare(b.name));
       this.$emit("change-team", this.teamMembers);
     },
 
@@ -496,6 +538,7 @@ export default {
       });
 
       this.$refs.moveTeamMemberToEmployeesButton.disabled = true;
+      this.teamMembers.sort((a, b) => a.name.localeCompare(b.name));
       this.$emit("change-team", this.teamMembers);
     },
 

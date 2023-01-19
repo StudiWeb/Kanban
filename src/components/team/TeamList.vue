@@ -17,30 +17,84 @@
       <i class="bi bi-exclamation-octagon" style="font-size: 24px"></i>
       <div class="ml-2">There are no any teams.</div>
     </div>
-    <table v-else class="table table-striped col-xl-6">
+    <table v-else class="table table-striped col-xl-4">
       <thead>
         <tr>
-          <th scope="col">#</th>
-          <th scope="col">Team name</th>
+          <th scope="col" class="col-1">#</th>
+          <th scope="col" class="col-7">Team name</th>
+          <th scope="col" class="col-4 text-center">See details</th>
         </tr>
       </thead>
       <tbody>
         <tr
           v-for="(team, index) in teams"
-          @mouseover="showTooltip(team.id)"
-          class="team"
-          rel="tooltip"
-          data-toggle="tooltip"
-          data-html="true"
-          data-placement="bottom"
-          :title="tooltip"
+          :key="index"
+          style="line-height: 32px"
         >
-          <td>{{ ++index }}</td>
+          <td>
+            {{ ++index }}
+          </td>
           <td>{{ team.name }}</td>
+          <td class="text-center">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              @click="seeTeamMembers(team)"
+            >
+              <i class="bi bi-eye"></i>
+            </button>
+          </td>
         </tr>
       </tbody>
     </table>
   </section>
+
+  <teleport to="body">
+    <div class="modal fade" id="teamModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">{{ teamName }}</h5>
+            <button
+              type="button"
+              class="close"
+              data-dismiss="modal"
+              aria-label="Close"
+            >
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th scope="col">#</th>
+                  <th scope="col">Name</th>
+                  <th scope="col">Job</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(member, index) in teamMembers">
+                  <td>{{ ++index }}</td>
+                  <td>{{ member.name }}</td>
+                  <td>{{ member.job }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              @click="closeTeamModal"
+              class="btn btn-primary"
+            >
+              Ok
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </teleport>
 </template>
 
 <script>
@@ -67,6 +121,8 @@ export default {
       teams: [],
       tooltip: "",
       isLoading: false,
+      teamName: "",
+      teamMembers: [],
     };
   },
 
@@ -80,12 +136,8 @@ export default {
 
   mounted() {
     $(function () {
-      $('[data-toggle="tooltip"]').tooltip();
-      $("body").tooltip({
-        selector: '[rel="tooltip"]',
-      });
+      $('[data-toggle="popover"]').popover();
     });
-
     this.loadData();
   },
 
@@ -114,28 +166,15 @@ export default {
       this.isLoading = false;
     },
 
-    showTooltip(teamId) {
-      if (this.teams.length > 0) {
-        this.tooltip = '<div class="font-weight-bold">Team members</div>';
-        const members = this.teams.find((team) => team.id === teamId).members;
-        members.forEach((m) => {
-          this.tooltip +=
-            '<div class="my-2">' +
-            m.name +
-            " - " +
-            "<span>" +
-            m.job +
-            "</span>" +
-            "</div>";
-        });
-      }
+    seeTeamMembers(team) {
+      this.teamName = team.name;
+      this.teamMembers = team.members;
+      $("#teamModal").modal("show");
+    },
+
+    closeTeamModal() {
+      $("#teamModal").modal("hide");
     },
   },
 };
 </script>
-
-<style scoped>
-.team:hover {
-  cursor: pointer;
-}
-</style>

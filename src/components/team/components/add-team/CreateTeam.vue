@@ -1,4 +1,15 @@
 <template>
+  <div class="row mx-0">
+    <div class="col-xl-6 px-0">
+      <div class="d-flex align-items-center">
+        <div class="h5 my-4 mr-2">Add team</div>
+        <div v-if="isLoading" class="spinner-border text-primary" role="status">
+          <span class="sr-only">Loading...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="row">
     <div class="col-xl-6">
       <div class="px-0 form-group">
@@ -99,7 +110,7 @@
 
 <script>
 import { initializeApp } from "firebase/app";
-import { getDatabase, set, ref } from "firebase/database";
+import { getDatabase, get, child, ref } from "firebase/database";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBiWEX-ygigO9Kj04kWtjASKLJ3RX20uuM",
@@ -126,8 +137,6 @@ export default {
     TeamMember,
   },
 
-  props: ["employees", "teams"],
-
   emits: ["open-modal", "change-key"],
 
   data() {
@@ -142,6 +151,9 @@ export default {
       moveTeamMemberToEmployeesButton: null,
       teamNameExists: false,
       search: "",
+      employees: [],
+      teams: [],
+      isLoading: false,
     };
   },
 
@@ -220,17 +232,79 @@ export default {
         return this.enteredTeamName;
       }
     },
+
+    teamNames() {
+      let names = [];
+      this.teams.forEach((t) => {
+        names.push(t.name);
+      });
+      return names;
+    },
   },
 
   mounted() {
     //disables buttons that moves employees
     this.$refs.moveEmployeeToTeamButton.disabled = true;
     this.$refs.moveTeamMemberToEmployeesButton.disabled = true;
+
+    this.loadData();
   },
 
   methods: {
+    async loadData() {
+      this.isLoading = true;
+      //gets all employees
+      await get(child(ref(database), "employees"))
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            for (const id in snapshot.val()) {
+              this.employees.push({
+                id: id,
+                name: snapshot.val()[id].name,
+                job: snapshot.val()[id].job,
+                isProjectManager: snapshot.val()[id].isProjectManager,
+                isTeamLeader: snapshot.val()[id].isTeamLeader,
+              });
+            }
+          } else {
+            console.log("No data available");
+          }
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+
+      await //gets all teams
+      get(child(ref(database), "teams"))
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            for (const id in snapshot.val()) {
+              this.teams.push({
+                id: id,
+                name: snapshot.val()[id].name,
+                members: snapshot.val()[id].members,
+              });
+            }
+          } else {
+            console.log("No data available");
+          }
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+
+      this.isLoading = false;
+    },
     openModal() {
-      this.$emit("open-modal", this.enteredTeamName, this.teamMembers);
+      this.teamMembers.forEach((m) => {
+        delete m.isSelected;
+      });
+      this.$emit(
+        "open-modal",
+        this.enteredTeamName,
+        this.teamNames,
+        this.teamMembers
+      );
     },
 
     setTeamName(e) {

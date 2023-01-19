@@ -59,7 +59,7 @@
     </div>
     <teleport to="body">
       <base-modal id="addEmployeeModal">
-        <template #header> Adding new employee </template>
+        <template #header> Add employee </template>
         <template #body>
           <p><span class="font-weight-bold">Name:</span> {{ name }}</p>
           <p><span class="font-weight-bold">Job position:</span> {{ job }}</p>

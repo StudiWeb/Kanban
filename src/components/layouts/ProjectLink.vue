@@ -1,8 +1,12 @@
 <template>
   <li v-if="isVisible">
-    <router-link class="nav-link" :to="'/' + page + '/' + id">{{
-      title
-    }}</router-link>
+    <router-link
+      class="nav-link d-flex align-items-center"
+      :to="'/' + page + '/' + id"
+    >
+      <slot name="icon"></slot>
+      <span class="ml-2" m>{{ title }}</span>
+    </router-link>
   </li>
 </template>
 

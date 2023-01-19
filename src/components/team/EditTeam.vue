@@ -48,20 +48,6 @@
   </teleport>
 
   <teleport to="body">
-    <base-modal id="validationEditTeamModal">
-      <template #header>Edit team</template>
-      <template #body>{{ validationEditTeamModalMesseage }}</template>
-      <template #footer>
-        <div class="d-flex justify-content-end">
-          <button @click="closeValidationEditTeamModal" class="btn btn-primary">
-            Ok
-          </button>
-        </div>
-      </template>
-    </base-modal>
-  </teleport>
-
-  <teleport to="body">
     <base-modal id="serverResponseModal">
       <template #header>Server response</template>
       <template #body>You have just edited a team!</template>
@@ -94,16 +80,6 @@ const firebaseConfig = {
 const firebase = initializeApp(firebaseConfig);
 const database = getDatabase(firebase);
 
-function sortByName(x, y) {
-  if (x.name > y.name) {
-    return 1;
-  }
-  if (x.name < y.name) {
-    return -1;
-  }
-  return 0;
-}
-
 import CreateTeam from "./components/edit-team/CreateTeam.vue";
 
 export default {
@@ -115,75 +91,24 @@ export default {
 
   data() {
     return {
-      componentName: "EditTeam",
       keyComponent: 0,
       teamName: "",
       teamMembers: [],
+      teamId: "",
       validationEditTeamModalMesseage: "",
       teams: [],
       employees: [],
     };
   },
 
-  computed: {
-    teamNames() {
-      let names = [];
-      this.teams.forEach((t) => {
-        names.push(t.name);
-      });
-      return names;
-    },
-  },
+  computed: {},
 
   methods: {
     openModal(name, members, teamId) {
-      //gets all employees
-      get(child(ref(database), "teams/" + teamId))
-        .then((snapshot) => {
-          if (snapshot.exists()) {
-            const teamNameStoredInDatabase = snapshot.val().name;
-            const teamMembersStoredInDatabase = snapshot.val().members;
-
-            if (name === "") {
-              this.validationEditTeamModalMesseage = "Your team needs a name.";
-              $("#validationEditTeamModal").modal("show");
-            } else if (members.length === 0) {
-              this.validationEditTeamModalMesseage =
-                "Your team needs at least one member.";
-              $("#validationEditTeamModal").modal("show");
-            } else if (
-              teamNameStoredInDatabase === name &&
-              JSON.stringify(teamMembersStoredInDatabase.sort(sortByName)) ===
-                JSON.stringify(members.sort(sortByName))
-            ) {
-              this.validationEditTeamModalMesseage =
-                "You must enter any change in a team to edit it.";
-              $("#validationEditTeamModal").modal("show");
-            } else if (
-              this.teamNames.find((teamName) => teamName === name) &&
-              teamNameStoredInDatabase !== name
-            ) {
-              this.validationEditTeamModalMesseage =
-                "This team name is already used. Please type different team name.";
-              $("#validationEditTeamModal").modal("show");
-            } else {
-              this.teamName = name;
-              this.teamMembers = members;
-              this.selectedTeamId = teamId;
-              $("#editTeamModal").modal("show");
-            }
-          } else {
-            this.validationEditTeamModalMesseage = "Please select a team.";
-            $("#validationEditTeamModal").modal("show");
-          }
-        })
-        .catch((error) => {
-          console.error(error);
-        });
-    },
-
-    closeValidationEditTeamModal() {
-      $("#validationEditTeamModal").modal("hide");
+      this.teamName = name;
+      this.teamMembers = members;
+      this.teamId = teamId;
+      $("#editTeamModal").modal("show");
     },
 
     closeServerResponseModal() {
@@ -200,7 +125,7 @@ export default {
     },
 
     editTeam() {
-      update(ref(database, "teams/" + this.selectedTeamId), {
+      update(ref(database, "teams/" + this.teamId), {
         name: this.teamName,
         members: this.teamMembers,
       });

@@ -2,23 +2,39 @@
   <sidebar-menu>
     <sidebar-heading>STAFF</sidebar-heading>
     <list-column>
-      <NavItem title="Manage employees" page="manage-employees" />
-      <NavItem title="Manage teams" page="manage-teams" />
+      <nav-item title="Manage employees" page="manage-employees">
+        <template #icon>
+          <i class="bi bi-person" style="font-size: 24px"></i>
+        </template>
+      </nav-item>
+      <nav-item title="Manage teams" page="manage-teams">
+        <template #icon>
+          <i class="bi bi-people" style="font-size: 24px"></i>
+        </template>
+      </nav-item>
     </list-column>
     <sidebar-heading>PROJECT MANAGMENT</sidebar-heading>
     <list-column>
-      <NavItem title="Manage projects" page="manage-projects" />
+      <nav-item title="Manage projects" page="manage-projects">
+        <template #icon>
+          <i class="bi bi-kanban" style="font-size: 24px"></i>
+        </template>
+      </nav-item>
     </list-column>
     <sidebar-heading>PROJECTS</sidebar-heading>
     <list-column>
-      <ProjectLink
+      <project-link
         v-for="p in projects"
         :key="p.id"
         :title="p.name"
         :id="p.id"
         :isVisible="p.isVisible"
         page="project"
-      />
+      >
+        <template #icon>
+          <i class="bi bi-star" style="font-size: 18px"></i
+        ></template>
+      </project-link>
     </list-column>
   </sidebar-menu>
 </template>
