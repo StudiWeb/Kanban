@@ -9,44 +9,46 @@
       </div>
     </div>
 
-    <div
-      v-if="numberOfTeams === 0 && isLoading === false"
-      class="d-flex align-items-center alert alert-info col-xl-6"
-      role="alert"
-    >
-      <i class="bi bi-exclamation-octagon" style="font-size: 24px"></i>
-      <div class="ml-2">There are no any teams.</div>
+    <div v-if="!isLoading">
+      <div
+        v-if="numberOfTeams === 0"
+        class="d-flex align-items-center alert alert-info col-xl-6"
+        role="alert"
+      >
+        <i class="bi bi-exclamation-octagon" style="font-size: 24px"></i>
+        <div class="ml-2">There are no any teams.</div>
+      </div>
+      <table v-else class="table table-striped col-xl-6">
+        <thead>
+          <tr>
+            <th scope="col" class="col-1">#</th>
+            <th scope="col" class="col-7">Team name</th>
+            <th scope="col" class="col-4 text-center">See details</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="(team, index) in teams"
+            :key="index"
+            style="line-height: 32px"
+          >
+            <td>
+              {{ ++index }}
+            </td>
+            <td>{{ team.name }}</td>
+            <td class="text-center">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                @click="seeTeamMembers(team)"
+              >
+                <i class="bi bi-eye"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
-    <table v-else class="table table-striped col-xl-4">
-      <thead>
-        <tr>
-          <th scope="col" class="col-1">#</th>
-          <th scope="col" class="col-7">Team name</th>
-          <th scope="col" class="col-4 text-center">See details</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr
-          v-for="(team, index) in teams"
-          :key="index"
-          style="line-height: 32px"
-        >
-          <td>
-            {{ ++index }}
-          </td>
-          <td>{{ team.name }}</td>
-          <td class="text-center">
-            <button
-              type="button"
-              class="btn btn-secondary"
-              @click="seeTeamMembers(team)"
-            >
-              <i class="bi bi-eye"></i>
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
   </section>
 
   <teleport to="body">

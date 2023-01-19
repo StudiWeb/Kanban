@@ -8,45 +8,43 @@
         </div>
       </div>
     </div>
-    <div
-      v-if="numberOfEmployees === 0"
-      class="d-flex align-items-center alert alert-info col-xl-6"
-      role="alert"
-    >
-      <i class="bi bi-exclamation-octagon" style="font-size: 24px"></i>
-      <div class="ml-2">There are no any employees.</div>
-    </div>
 
-    <table
-      v-if="isLoading === false && numberOfEmployees !== 0"
-      class="col-xl-6 table table-striped"
-      id="list"
-    >
-      <thead>
-        <tr>
-          <th scope="col">#</th>
-          <th scope="col">Name</th>
-          <th scope="col">Job Position</th>
-          <th scope="col" class="text-center">Project Manager</th>
-          <th scope="col" class="text-center">Team Leader</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="(e, index) in employees" :key="e.id">
-          <td>{{ ++index }}</td>
-          <td>{{ e.name }}</td>
-          <td>{{ e.job }}</td>
-          <td class="text-center">
-            <i v-if="e.isProjectManager" class="bi bi-check"></i>
-            <i v-else class="bi bi-dash"></i>
-          </td>
-          <td class="text-center">
-            <i v-if="e.isTeamLeader" class="bi bi-check"></i>
-            <i v-else class="bi bi-dash"></i>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <div v-if="!isLoading">
+      <div
+        v-if="numberOfEmployees === 0"
+        class="d-flex align-items-center alert alert-info col-xl-6"
+        role="alert"
+      >
+        <i class="bi bi-exclamation-octagon" style="font-size: 24px"></i>
+        <div class="ml-2">There are no any employees.</div>
+      </div>
+      <table v-else class="col-xl-6 table table-striped" id="list">
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Name</th>
+            <th scope="col">Job Position</th>
+            <th scope="col" class="text-center">Project Manager</th>
+            <th scope="col" class="text-center">Team Leader</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(e, index) in employees" :key="e.id">
+            <td>{{ ++index }}</td>
+            <td>{{ e.name }}</td>
+            <td>{{ e.job }}</td>
+            <td class="text-center">
+              <i v-if="e.isProjectManager" class="bi bi-check"></i>
+              <i v-else class="bi bi-dash"></i>
+            </td>
+            <td class="text-center">
+              <i v-if="e.isTeamLeader" class="bi bi-check"></i>
+              <i v-else class="bi bi-dash"></i>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </section>
 </template>
 

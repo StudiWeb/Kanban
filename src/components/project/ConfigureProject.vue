@@ -19,7 +19,7 @@
       <div class="row mx-0">
         <div class="px-0 col-xl-6 form-group">
           <label>Select project</label>
-          <select v-model="selectedProjectId" class="form-control">
+          <select v-model="projectId" class="form-control">
             <option value="empty" selected>none</option>
             <option v-for="p in projects" :key="p.id" :value="p.id">
               {{ p.name }}
@@ -94,7 +94,7 @@
           </div>
         </div>
         <component
-          :selectedProjectId="selectedProjectId"
+          :projectId="projectId"
           @change-key="changeKey"
           :is="componentName"
           :key="componentKey"
@@ -142,7 +142,7 @@ export default {
 
   data() {
     return {
-      selectedProjectId: "empty",
+      projectId: "empty",
       componentName: "project-configuration",
       isProjectSelected: false,
       componentKey: 0,
@@ -153,7 +153,7 @@ export default {
   },
 
   watch: {
-    selectedProjectId(newValue) {
+    projectId(newValue) {
       if (newValue !== "empty") {
         this.isProjectSelected = true;
       } else {

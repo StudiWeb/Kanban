@@ -10,7 +10,7 @@
     </div>
   </div>
 
-  <div v-if="isLoading === false" class="row mx-0">
+  <div v-if="!isLoading" class="row mx-0">
     <div class="col-xl-6 px-0">
       <div
         v-if="tasks.length === 0"

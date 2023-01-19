@@ -421,8 +421,6 @@ export default {
     async createProject() {
       //removes isSelected, isSelectedAsProjectManager and isSelectedAsTeamLeader properties
       this.projectMembers.forEach((m) => {
-        delete m.isSelectedAsProjectManager;
-        delete m.isSelectedAsTeamLeader;
         delete m.isSelected;
       });
 
@@ -460,7 +458,7 @@ export default {
           members: this.projectMembers,
         };
       }
-      console.log(this.projectName);
+
       push(ref(database, "projects/"), {
         name: this.projectName.trim(),
         team: this.selectedTeam,

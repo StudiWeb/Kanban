@@ -10,102 +10,104 @@
     </div>
   </div>
 
-  <div class="row">
-    <div class="col-xl-6">
-      <div class="px-0 form-group">
-        <label>Team name</label>
-        <input
-          v-model="enteredTeamName"
-          id="teamName"
-          class="form-control"
-          aria-describedby="invalidTeamName"
-          ref="teamNameInput"
-          type="text"
-        />
-        <div
-          v-if="teamNameExists"
-          id="invalidTeamName"
-          class="invalid-feedback"
-        >
-          There is already a team wtih this name. Please type different team
-          name.
+  <div v-if="!isLoading">
+    <div class="row">
+      <div class="col-xl-6">
+        <div class="px-0 form-group">
+          <label>Team name</label>
+          <input
+            v-model="enteredTeamName"
+            id="teamName"
+            class="form-control"
+            aria-describedby="invalidTeamName"
+            ref="teamNameInput"
+            type="text"
+          />
+          <div
+            v-if="teamNameExists"
+            id="invalidTeamName"
+            class="invalid-feedback"
+          >
+            There is already a team wtih this name. Please type different team
+            name.
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <div class="h5 my-4">Add employees to your team</div>
-  <div class="d-flex flex-column flex-lg-row align-items-md-start">
-    <!-- employees to choose -->
-    <the-employees title="Employees">
-      <template #search>
-        <div class="form-group">
-          <input
-            v-model="search"
-            type="search"
-            class="form-control"
-            placeholder="search by name or job"
-          />
-        </div>
-      </template>
-      <template #default>
-        <team-member
-          v-for="e in employees"
-          @click="selectEmployee(e.id)"
-          :id="e.id"
-          :name="e.name"
-          :job="e.job"
-          :class="{ selectedToMove: e.isSelected }"
+    <div class="h5 my-4">Add employees to your team</div>
+    <div class="d-flex flex-column flex-lg-row align-items-md-start">
+      <!-- employees to choose -->
+      <the-employees title="Employees">
+        <template #search>
+          <div class="form-group">
+            <input
+              v-model="search"
+              type="search"
+              class="form-control"
+              placeholder="search by name or job"
+            />
+          </div>
+        </template>
+        <template #default>
+          <team-member
+            v-for="e in employees"
+            @click="selectEmployee(e.id)"
+            :id="e.id"
+            :name="e.name"
+            :job="e.job"
+            :class="{ selectedToMove: e.isSelected }"
+          >
+          </team-member>
+        </template>
+      </the-employees>
+
+      <!-- move buttons -->
+      <div class="d-flex flex-column align-self-center align-items-center m-3">
+        <button
+          @click="moveEmployeeToTeam"
+          id="moveToTeam"
+          ref="moveEmployeeToTeamButton"
+          type="button"
+          class="btn btn-success my-2"
         >
-        </team-member>
-      </template>
-    </the-employees>
+          <i class="bi bi-arrow-right" style="font-size: 16px"></i>
+        </button>
+        <button
+          @click="moveTeamMemberToEmployees"
+          id="moveToEmployees"
+          ref="moveTeamMemberToEmployeesButton"
+          type="button"
+          class="btn btn-danger my-2"
+        >
+          <i class="bi bi-arrow-left" style="font-size: 16px"></i>
+        </button>
+      </div>
 
-    <!-- move buttons -->
-    <div class="d-flex flex-column align-self-center align-items-center m-3">
-      <button
-        @click="moveEmployeeToTeam"
-        id="moveToTeam"
-        ref="moveEmployeeToTeamButton"
-        type="button"
-        class="btn btn-success my-2"
-      >
-        <i class="bi bi-arrow-right" style="font-size: 16px"></i>
-      </button>
-      <button
-        @click="moveTeamMemberToEmployees"
-        id="moveToEmployees"
-        ref="moveTeamMemberToEmployeesButton"
-        type="button"
-        class="btn btn-danger my-2"
-      >
-        <i class="bi bi-arrow-left" style="font-size: 16px"></i>
-      </button>
+      <!-- team members -->
+      <the-employees :title="teamName">
+        <template #default>
+          <team-member
+            v-for="m in teamMembers"
+            @click="selectTeamMember(m.id)"
+            :key="m.id"
+            :id="m.id"
+            :name="m.name"
+            :job="m.job"
+            :class="{ selectedToDelete: m.isSelected }"
+          >
+          </team-member>
+        </template>
+      </the-employees>
     </div>
-
-    <!-- team members -->
-    <the-employees :title="teamName">
-      <template #default>
-        <team-member
-          v-for="m in teamMembers"
-          @click="selectTeamMember(m.id)"
-          :key="m.id"
-          :id="m.id"
-          :name="m.name"
-          :job="m.job"
-          :class="{ selectedToDelete: m.isSelected }"
-        >
-        </team-member>
-      </template>
-    </the-employees>
+    <button
+      @click="openModal"
+      ref="saveTeamButton"
+      class="btn btn-success my-4 align-self-start align-self-xl-end"
+    >
+      Add team
+    </button>
   </div>
-  <button
-    @click="openModal"
-    ref="saveTeamButton"
-    class="btn btn-success my-4 align-self-start align-self-xl-end"
-  >
-    Add team
-  </button>
 </template>
 
 <script>

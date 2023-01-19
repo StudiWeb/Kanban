@@ -1,7 +1,7 @@
 <template>
-  <div class="col-xl-6 px-0">
+  <div v-if="isLoading" class="col-xl-6 px-0">
     <div class="d-flex align-items-center">
-      <div v-if="isLoading" class="spinner-border text-primary" role="status">
+      <div class="spinner-border text-primary" role="status">
         <span class="sr-only">Loading...</span>
       </div>
     </div>

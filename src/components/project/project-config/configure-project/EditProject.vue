@@ -1,55 +1,88 @@
 <template>
   <section>
-    <div class="h5 my-3">Edit project</div>
-    <div class="col-xl-6 px-0">
-      <div class="form-group">
-        <label>Project name</label>
-        <input v-model="projectName" type="text" class="form-control" />
-      </div>
-      <div class="form-group">
-        <label>Start date</label>
-        <input v-model="startDate" type="date" class="form-control" />
-      </div>
-      <div class="form-group">
-        <label>End date</label>
-        <input v-model="endDate" type="date" class="form-control" />
-      </div>
-      <div class="form-group">
-        <label>Choose project manager</label>
-        <select
-          v-model="projectManagerId"
-          @change="selectSupervisor('projectManager')"
-          class="form-control"
-        >
-          <option v-for="pm in projectManagers" :key="pm.id" :value="pm.id">
-            {{ pm.name }} - {{ pm.job }}
-          </option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Choose team leader</label>
-        <select
-          v-model="teamLeaderId"
-          @change="selectSupervisor('teamLeader')"
-          class="form-control"
-        >
-          <option v-for="tl in teamLeaders" :key="tl.id" :value="tl.id">
-            {{ tl.name }} - {{ tl.job }}
-          </option>
-        </select>
+    <div class="col-xl-6 px-0 mb-4">
+      <div class="d-flex align-items-center">
+        <div class="h5 mr-2">Edit project</div>
+        <div v-if="isLoading" class="spinner-border text-primary" role="status">
+          <span class="sr-only">Loading...</span>
+        </div>
       </div>
     </div>
 
-    <CreateTeam
-      @update-team="updateTeam"
-      :employees="employees"
-      :teamMembers="teamMembers"
-      :teamName="teamName"
-    />
+    <div v-if="!isLoading">
+      <div class="col-xl-6 px-0">
+        <div class="form-group">
+          <label>Project name</label>
+          <input
+            v-model="projectName"
+            id="projectName"
+            type="text"
+            class="form-control"
+          />
+          <div v-if="projectNameExists" class="invalid-feedback">
+            This project name is already in use. Please type different project
+            name.
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Start date</label>
+          <input
+            v-model="startDate"
+            id="startDate"
+            type="date"
+            class="form-control"
+          />
+        </div>
+        <div class="form-group">
+          <label>End date</label>
+          <input
+            v-model="endDate"
+            id="endDate"
+            type="date"
+            class="form-control"
+          />
+        </div>
+        <div class="form-group">
+          <label>Choose project manager</label>
+          <select
+            v-model="projectManagerId"
+            @change="selectSupervisor('projectManager')"
+            id="projectManager"
+            class="form-control"
+          >
+            <option value="empty">none</option>
+            <option v-for="pm in projectManagers" :key="pm.id" :value="pm.id">
+              {{ pm.name }} - {{ pm.job }}
+            </option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Choose team leader</label>
+          <select
+            v-model="teamLeaderId"
+            @change="selectSupervisor('teamLeader')"
+            id="teamLeader"
+            class="form-control"
+          >
+            <option value="empty">none</option>
+            <option v-for="tl in teamLeaders" :key="tl.id" :value="tl.id">
+              {{ tl.name }} - {{ tl.job }}
+            </option>
+          </select>
+        </div>
+      </div>
 
-    <button @click="openModal" class="btn btn-warning my-4">
-      Edit project
-    </button>
+      <CreateTeam
+        @update-team="updateTeam"
+        :employees="employees"
+        :teamMembers="teamMembers"
+        :teamName="teamName"
+      />
+
+      <button @click="openModal" class="btn btn-warning my-4">
+        Edit project
+      </button>
+    </div>
   </section>
 
   <teleport to="body">
@@ -87,29 +120,11 @@
             <thead>
               <th>Name</th>
               <th>Job position</th>
-              <th class="text-center">Project manager</th>
-              <th class="text-center">Team leader</th>
             </thead>
             <tbody>
               <tr v-for="member in teamMembers" :key="member.id">
                 <td>{{ member.name }}</td>
                 <td>{{ member.job }}</td>
-                <td class="text-center">
-                  <i
-                    v-if="member.isSelectedAsProjectManager"
-                    class="bi bi-check"
-                    style="font-size: 16px"
-                  ></i>
-                  <i v-else class="bi bi-dash" style="font-size: 16px"></i>
-                </td>
-                <td class="text-center">
-                  <i
-                    v-if="member.isSelectedAsTeamLeader"
-                    class="bi bi-check"
-                    style="font-size: 16px"
-                  ></i>
-                  <i v-else class="bi bi-dash" style="font-size: 16px"></i>
-                </td>
               </tr>
             </tbody>
           </table>
@@ -246,12 +261,13 @@ export default {
 
   emits: ["change-key"],
 
-  props: ["selectedProjectId"],
+  props: ["projectId"],
 
   data() {
     return {
       project: null,
       projectName: "",
+      projectNameExists: false,
       startDate: "",
       endDate: "",
       projectManagerId: "empty",
@@ -261,11 +277,13 @@ export default {
       teamLeaders: [],
       teamLeader: null,
       teamMembers: [],
-      validation: false,
-      teamName: "",
       project: null,
+      teamName: "",
       employees: [],
-      projects: [],
+      projectNames: [],
+      baseProjectMembers: [],
+      teamId: "",
+      isLoading: false,
     };
   },
 
@@ -283,6 +301,56 @@ export default {
     },
   },
 
+  watch: {
+    projectName(name) {
+      if (name === "") {
+        this.projectNameExists = false;
+        $("#projectName").addClass("is-invalid");
+      } else if (
+        this.projectNames.find(
+          (p) => p.name === name && p.id !== this.projectId
+        )
+      ) {
+        $("#projectName").addClass("is-invalid");
+        this.projectNameExists = true;
+      } else {
+        $("#projectName").removeClass("is-invalid");
+      }
+    },
+
+    startDate(date) {
+      if (date === "") {
+        $("#startDate").addClass("is-invalid");
+      } else {
+        $("#startDate").removeClass("is-invalid");
+      }
+    },
+
+    endDate(date) {
+      if (date === "") {
+        $("#endDate").addClass("is-invalid");
+      } else {
+        $("#endDate").removeClass("is-invalid");
+      }
+    },
+
+    projectManagerId(id) {
+      if (id === "empty") {
+        $("#projectManager").addClass("is-invalid");
+      } else {
+        $("#projectManager").removeClass("is-invalid");
+      }
+    },
+
+    teamLeaderId(id) {
+      if (id === "empty") {
+        $("#teamLeader").addClass("is-invalid");
+      } else {
+        $("#teamLeader").removeClass("is-invalid");
+      }
+    },
+  },
+
   mounted() {
     this.loadData();
   },
@@ -290,10 +358,31 @@ export default {
   methods: {
     async loadData() {
       this.isLoading = true;
+      //gets project managers, team leaders and employees
       await get(child(ref(database), "employees"))
         .then((snapshot) => {
           if (snapshot.exists()) {
             for (const id in snapshot.val()) {
+              if (snapshot.val()[id].isProjectManager) {
+                this.projectManagers.push({
+                  id: id,
+                  name: snapshot.val()[id].name,
+                  job: snapshot.val()[id].job,
+                  isProjectManager: snapshot.val()[id].isProjectManager,
+                  isTeamLeader: snapshot.val()[id].isTeamLeader,
+                });
+              }
+
+              if (snapshot.val()[id].isTeamLeader) {
+                this.teamLeaders.push({
+                  id: id,
+                  name: snapshot.val()[id].name,
+                  job: snapshot.val()[id].job,
+                  isProjectManager: snapshot.val()[id].isProjectManager,
+                  isTeamLeader: snapshot.val()[id].isTeamLeader,
+                });
+              }
+
               this.employees.push({
                 id: id,
                 name: snapshot.val()[id].name,
@@ -314,16 +403,9 @@ export default {
         .then((snapshot) => {
           if (snapshot.exists()) {
             for (const id in snapshot.val()) {
-              this.projects.push({
+              this.projectNames.push({
                 id: id,
                 name: snapshot.val()[id].name,
-                startDate: snapshot.val()[id].startDate,
-                endDate: snapshot.val()[id].endDate,
-                projectManager: snapshot.val()[id].projectManager,
-                teamLeader: snapshot.val()[id].teamLeader,
-                team: snapshot.val()[id].team,
-                tasks: snapshot.val()[id].tasks,
-                isVisible: snapshot.val()[id].isVisible,
               });
             }
           } else {
@@ -333,15 +415,31 @@ export default {
         .catch((error) => {
           console.error(error);
         });
-      this.employees.forEach((e) => {
-        if (e.isProjectManager) {
-          this.projectManagers.push(e);
-        }
-        if (e.isTeamLeader) {
-          this.teamLeaders.push(e);
-        }
-      });
-      this.project = this.projects.find((p) => p.id === this.selectedProjectId);
+      //gets selected project
+      await get(child(ref(database), "projects/" + this.projectId))
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            this.project = {
+              id: this.projectId,
+              name: snapshot.val().name,
+              startDate: snapshot.val().startDate,
+              endDate: snapshot.val().endDate,
+              projectManager: snapshot.val().projectManager,
+              teamLeader: snapshot.val().teamLeader,
+              team: snapshot.val().team,
+              tasks: snapshot.val().tasks,
+              isVisible: snapshot.val().isVisible,
+            };
+
+            this.baseProjectMembers = snapshot.val().team.members;
+          } else {
+            console.log("No data available");
+          }
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+
       this.projectName = this.project.name;
       this.startDate = this.project.startDate;
       this.endDate = this.project.endDate;
@@ -349,8 +447,10 @@ export default {
       this.projectManagerId = this.project.projectManager.id;
       this.teamLeader = this.project.teamLeader;
       this.teamLeaderId = this.project.teamLeader.id;
-      this.teamMembers = this.project.team.members;
+      this.teamId = this.project.team.id;
       this.teamName = this.project.team.name;
+      this.teamMembers = this.project.team.members;
+
       this.isLoading = false;
     },
 
@@ -377,103 +477,125 @@ export default {
     },
 
     selectSupervisor(supervisor) {
-      get(child(ref(database), "projects/" + this.selectedProjectId))
-        .then((snapshot) => {
-          if (snapshot.exists()) {
-            /**
-             * project manager
-             */
-            if (supervisor === "projectManager") {
-              const projectManagerId = this.projectManagerId;
-              const projectManager = this.projectManagers.find(
-                (pm) => pm.id === projectManagerId
-              );
-              this.projectManager = projectManager;
+      /**
+       * project manager
+       */
+      if (supervisor === "projectManager") {
+        const projectManagerId = this.projectManagerId;
 
-              if (projectManagerId !== "empty") {
-                this.teamMembers.forEach(
-                  (m) => (m.isSelectedAsProjectManager = false)
-                );
+        if (projectManagerId !== "empty") {
+          const projectManager = this.projectManagers.find(
+            (pm) => pm.id === projectManagerId
+          );
+          this.projectManager = projectManager;
 
-                if (this.teamMembers.find((m) => m.id === projectManagerId)) {
-                  this.teamMembers.find(
-                    (m) => m.id === projectManagerId
-                  ).isSelectedAsProjectManager = true;
-                } else {
-                  projectManager.isSelectedAsProjectManager = true;
-                  this.teamMembers.push(projectManager);
-                }
-              }
-              this.projectManager.isSelectedAsProjectManager = true;
-            }
+          this.teamMembers.forEach(
+            (m) => (m.isSelectedAsProjectManager = false)
+          );
 
-            /**
-             * team leader
-             */
-            if (supervisor === "teamLeader") {
-              const teamLeaderId = this.teamLeaderId;
-              const teamLeader = this.teamLeaders.find(
-                (tl) => tl.id === teamLeaderId
-              );
-              this.teamLeader = teamLeader;
-
-              if (teamLeaderId !== "empty") {
-                this.teamMembers.forEach(
-                  (m) => (m.isSelectedAsTeamLeader = false)
-                );
-
-                if (this.teamMembers.find((m) => m.id === teamLeaderId)) {
-                  this.teamMembers.find(
-                    (m) => m.id === teamLeaderId
-                  ).isSelectedAsTeamLeader = true;
-                } else {
-                  teamLeader.isSelectedAsTeamLeader = true;
-                  this.teamMembers.push(teamLeader);
-                }
-              }
-              this.teamLeader.isSelectedAsTeamLeader = true;
-            }
+          if (this.teamMembers.find((m) => m.id === projectManagerId)) {
+            this.teamMembers.find(
+              (m) => m.id === projectManagerId
+            ).isSelectedAsProjectManager = true;
           } else {
-            console.log("No data available");
+            projectManager.isSelectedAsProjectManager = true;
+            this.teamMembers.push(projectManager);
           }
-        })
-        .catch((error) => {
-          console.error(error);
-        });
+
+          this.projectManager.isSelectedAsProjectManager = true;
+        } else {
+          this.projectManager = null;
+        }
+      }
+
+      /**
+       * team leader
+       */
+      if (supervisor === "teamLeader") {
+        const teamLeaderId = this.teamLeaderId;
+
+        if (teamLeaderId !== "empty") {
+          const teamLeader = this.teamLeaders.find(
+            (tl) => tl.id === teamLeaderId
+          );
+          this.teamLeader = teamLeader;
+          this.teamMembers.forEach((m) => (m.isSelectedAsTeamLeader = false));
+
+          if (this.teamMembers.find((m) => m.id === teamLeaderId)) {
+            this.teamMembers.find(
+              (m) => m.id === teamLeaderId
+            ).isSelectedAsTeamLeader = true;
+          } else {
+            teamLeader.isSelectedAsTeamLeader = true;
+            this.teamMembers.push(teamLeader);
+          }
+
+          this.teamLeader.isSelectedAsTeamLeader = true;
+        } else {
+          this.teamLeader = null;
+        }
+      }
     },
 
-    openModal() {
+    async openModal() {
       let validation = false;
 
-      if (this.project.name !== this.projectName) {
+      if (this.projectName !== this.project.name) {
         validation = true;
       }
 
-      if (this.project.startDate !== this.startDate) {
+      if (
+        this.projectNames.find(
+          (p) => p.name === this.projectName && p.id !== this.projectId
+        )
+      ) {
         validation = true;
       }
 
-      if (this.project.endDate !== this.endDate) {
+      if (this.startDate !== this.project.startDate && this.startDate !== "") {
         validation = true;
       }
 
-      if (this.project.projectManager.id !== this.projectManagerId) {
+      if (this.endDate !== this.project.endDate && this.endDate !== "") {
         validation = true;
       }
 
-      const baseProjectMembers = this.project.team.members;
-      baseProjectMembers.sort((a, b) => a.name.localeCompare(b.name));
+      if (
+        this.projectManagerId !== this.project.projectManager.id &&
+        this.projectManagerId !== "empty"
+      ) {
+        validation = true;
+      }
+
+      if (
+        this.teamLeaderId !== this.project.teamLeader.id &&
+        this.teamLeaderId !== "empty"
+      ) {
+        validation = true;
+      }
+
+      this.baseProjectMembers.forEach((m) => {
+        delete m.isSelected;
+        delete m.isSelectedAsProjectManager;
+        delete m.isSelectedAsTeamLeader;
+      });
+
+      this.teamMembers.forEach((m) => {
+        delete m.isSelected;
+        delete m.isSelectedAsProjectManager;
+        delete m.isSelectedAsTeamLeader;
+      });
+
+      this.baseProjectMembers.sort((a, b) => a.name.localeCompare(b.name));
       this.teamMembers.sort((a, b) => a.name.localeCompare(b.name));
 
-      if (!isEqual(baseProjectMembers, this.teamMembers)) {
+      if (!isEqual(this.baseProjectMembers, this.teamMembers)) {
         validation = true;
       }
 
       if (validation) {
-        this.validation = true;
         $("#editProjectModal").modal("show");
       } else {
-        this.validation = false;
         $("#validationModal").modal("show");
       }
     },
@@ -492,13 +614,20 @@ export default {
     },
 
     editProject() {
-      update(ref(database, "projects/" + this.selectedProjectId), {
+      // delete this.projectManager.isSelectedAsProjectManager;
+      // delete this.projectManager.isSelectedAsTeamLeader;
+
+      // delete this.teamLeader.isSelectedAsProjectManager;
+      // delete this.teamLeader.isSelectedAsTeamLeader;
+
+      update(ref(database, "projects/" + this.projectId), {
         name: this.projectName,
         startDate: this.startDate,
         endDate: this.endDate,
         projectManager: this.projectManager,
         teamLeader: this.teamLeader,
         team: {
+          id: this.teamId,
           name: this.teamName,
           members: this.teamMembers,
         },

@@ -1,8 +1,8 @@
 <template>
   <div class="row mx-0">
-    <div class="col-xl-6 px-0">
+    <div class="col-xl-6 px-0 mb-4">
       <div class="d-flex align-items-center">
-        <div class="h5 my-4 mr-2">List of projects</div>
+        <div class="h5 mr-2">Project configuration</div>
         <div v-if="isLoading" class="spinner-border text-primary" role="status">
           <span class="sr-only">Loading...</span>
         </div>
@@ -81,7 +81,7 @@ const database = getDatabase(firebase);
 export default {
   emits: ["change-key"],
 
-  props: ["selectedProjectId"],
+  props: ["projectId"],
 
   data() {
     return {
@@ -98,7 +98,7 @@ export default {
   methods: {
     async loadData() {
       this.isLoading = true;
-      await get(child(ref(database), "projects/" + this.selectedProjectId))
+      await get(child(ref(database), "projects/" + this.projectId))
         .then((snapshot) => {
           if (snapshot.exists()) {
             if (snapshot.val().isVisible === true) {
@@ -130,7 +130,7 @@ export default {
 
     changeIsProjectVisible() {
       if (this.isProjectVisible === "yes") {
-        update(ref(database, "projects/" + this.selectedProjectId), {
+        update(ref(database, "projects/" + this.projectId), {
           isVisible: true,
         })
           .then(() => {
@@ -144,7 +144,7 @@ export default {
             console.log(error);
           });
       } else {
-        update(ref(database, "projects/" + this.selectedProjectId), {
+        update(ref(database, "projects/" + this.projectId), {
           isVisible: false,
         })
           .then(() => {

@@ -174,7 +174,7 @@ const database = getDatabase(firebase);
 export default {
   emits: ["change-key"],
 
-  props: ["selectedProjectId"],
+  props: ["projectId"],
 
   data() {
     return {
@@ -184,7 +184,7 @@ export default {
       endDate: "",
       selectedEmployeeIds: [],
       selectedEmployees: [],
-      selectedProject: null,
+      project: null,
       projectMembers: [],
       validationMesseage: "",
       isTaskNameUsed: false,
@@ -254,11 +254,11 @@ export default {
     async loadData() {
       this.isLoading = true;
       //gets all projects
-      await get(child(ref(database), "projects/" + this.selectedProjectId))
+      await get(child(ref(database), "projects/" + this.projectId))
         .then((snapshot) => {
           if (snapshot.exists()) {
-            this.selectedProject = {
-              id: this.selectedProjectId,
+            this.project = {
+              id: this.projectId,
               name: snapshot.val().name,
               startDate: snapshot.val().startDate,
               endDate: snapshot.val().endDate,
@@ -343,7 +343,7 @@ export default {
     },
 
     createTask() {
-      push(ref(database, "projects/" + this.selectedProjectId + "/tasks/"), {
+      push(ref(database, "projects/" + this.projectId + "/tasks/"), {
         name: this.taskName,
         description: this.taskDescription,
         startDate: this.startDate,
