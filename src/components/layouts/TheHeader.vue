@@ -1,8 +1,11 @@
 <template>
   <nav class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
     <a class="navbar-brand col-md-3 col-lg-2 mr-0 px-3" href="/">Kanban</a>
-    <button @click="toggleSidebar()" class="btn btn-dark ml-4 mr-auto">
-      {{ tooggleButtonTitle }}
+    <button
+      @click="toggleSidebar()"
+      class="btn btn-dark toggle-button ml-4 mr-auto"
+    >
+      <i class="bi bi-chevron-left"></i>
     </button>
     <button
       class="navbar-toggler position-absolute d-md-none collapsed"
@@ -22,21 +25,27 @@
 export default {
   data() {
     return {
-      tooggleButtonTitle: "Hide menu",
+      toggle: true,
     };
   },
 
   methods: {
     toggleSidebar() {
-      if (this.tooggleButtonTitle === "Hide menu") {
+      if (this.toggle) {
+        this.toggle = false;
+        const arrow = $('<i class="bi bi-chevron-right"></i>');
         $("#sidebarMenu").removeClass("d-md-block");
-        this.tooggleButtonTitle = "Show menu";
         $("#main").removeClass('col-md-9 ml-auto col-lg-10 px-md-4"');
         $("#main").addClass("col-12");
+        $(".toggle-button").empty();
+        $(".toggle-button").append(arrow);
       } else {
+        this.toggle = true;
+        const arrow = $('<i class="bi bi-chevron-left"></i>');
         $("#sidebarMenu").addClass("d-md-block");
-        this.tooggleButtonTitle = "Hide menu";
         $("#main").addClass('col-md-9 ml-auto col-lg-10 px-md-4"');
+        $(".toggle-button").empty();
+        $(".toggle-button").append(arrow);
       }
     },
   },
